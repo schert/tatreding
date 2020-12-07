@@ -25,7 +25,7 @@ dim.indicator.bottom = dim.indicator.top + dim.indicator.height + dim.indicator.
 var indicatorTop = d3.scaleLinear()
   .range([dim.indicator.top, dim.indicator.bottom]);
 
-var parseDate = d3.timeParse("%d-%b-%y");
+var parseDate = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
 var zoom = d3.zoom()
   .on("zoom", zoomed);
@@ -343,68 +343,71 @@ socket.on('chartData', function(data) {
   yPercent.domain(techan.scale.plot.percent(y, accessor(data[indicatorPreRoll])).domain());
   yVolume.domain(techan.scale.plot.volume(data).domain());
 
-  var trendlineData = [{
-      start: {
-        date: new Date(2014, 2, 11),
-        value: 72.50
-      },
-      end: {
-        date: new Date(2014, 5, 9),
-        value: 63.34
-      }
-    },
-    {
-      start: {
-        date: new Date(2013, 10, 21),
-        value: 43
-      },
-      end: {
-        date: new Date(2014, 2, 17),
-        value: 70.50
-      }
-    }
+  var trendlineData = [
+    // {
+    //   start: {
+    //     date: new Date(2014, 2, 11),
+    //     value: 72.50
+    //   },
+    //   end: {
+    //     date: new Date(2014, 5, 9),
+    //     value: 63.34
+    //   }
+    // },
+    // {
+    //   start: {
+    //     date: new Date(2013, 10, 21),
+    //     value: 43
+    //   },
+    //   end: {
+    //     date: new Date(2014, 2, 17),
+    //     value: 70.50
+    //   }
+    // }
   ];
 
-  var supstanceData = [{
-      start: new Date(2014, 2, 11),
-      end: new Date(2014, 5, 9),
-      value: 63.64
-    },
-    {
-      start: new Date(2013, 10, 21),
-      end: new Date(2014, 2, 17),
-      value: 55.50
-    }
+  var supstanceData = [
+    // {
+    //   start: new Date(2014, 2, 11),
+    //   end: new Date(2014, 5, 9),
+    //   value: 63.64
+    // },
+    // {
+    //   start: new Date(2013, 10, 21),
+    //   end: new Date(2014, 2, 17),
+    //   value: 55.50
+    // }
   ];
 
-  var trades = [{
-      date: data[67].date,
-      type: "buy",
-      price: data[67].low,
-      low: data[67].low,
-      high: data[67].high
-    },
-    {
-      date: data[100].date,
-      type: "sell",
-      price: data[100].high,
-      low: data[100].low,
-      high: data[100].high
-    },
-    {
-      date: data[130].date,
-      type: "buy",
-      price: data[130].low,
-      low: data[130].low,
-      high: data[130].high
-    },
-    {
-      date: data[170].date,
-      type: "sell",
-      price: data[170].low,
-      low: data[170].low,
-      high: data[170].high
-    }
+  var trades = [
+    // {
+    //   date: data[67].date,
+    //   type: "buy",
+    //   price: data[67].low,
+    //   low: data[67].low,
+    //   high: data[67].high
+    // },
+    // {
+    //   date: data[100].date,
+    //   type: "sell",
+    //   price: data[100].high,
+    //   low: data[100].low,
+    //   high: data[100].high
+    // },
+    // {
+    //   date: data[130].date,
+    //   type: "buy",
+    //   price: data[130].low,
+    //   low: data[130].low,
+    //   high: data[130].high
+    // },
+    // {
+    //   date: data[170].date,
+    //   type: "sell",
+    //   price: data[170].low,
+    //   low: data[170].low,
+    //   high: data[170].high
+    // }
   ];
 
   var macdData = techan.indicator.macd()(data);
@@ -424,10 +427,10 @@ socket.on('chartData', function(data) {
   svg.select("g.crosshair.ohlc").call(ohlcCrosshair).call(zoom);
   svg.select("g.crosshair.macd").call(macdCrosshair).call(zoom);
   svg.select("g.crosshair.rsi").call(rsiCrosshair).call(zoom);
-  svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
-  svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
+  // svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
+  // svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
 
-  svg.select("g.tradearrow").datum(trades).call(tradearrow);
+  // svg.select("g.tradearrow").datum(trades).call(tradearrow);
 
   // Stash for zooming
   zoomableInit = x.zoomable().domain([indicatorPreRoll, data.length]).copy(); // Zoom in a little to hide indicator preroll
