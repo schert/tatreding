@@ -15,13 +15,14 @@ module.exports = function(io) {
 
   var startTime = new Date();
   var endTime = new Date(startTime);
-  startTime.setHours(startTime.getHours() - 1);
+  var historyStore;
+  startTime.setHours(startTime.getHours() - 2);
   binanceModule.getCandleHistory('XRPEUR', '1m', +startTime, +endTime, (history) => {
+    historyStore = history;
     binanceModule.connect(() => {
       binanceModule.subscribe([
         'xrpeur@kline_1m'
       ]);
-      io.emit('chartData', history);
     }, (message) => {
       var obj = history.pop();
       if(obj.Date.getMinutes() == message.Date.getMinutes()) {
@@ -30,12 +31,13 @@ module.exports = function(io) {
         history.push(obj);
         history.push(message);
       }
-      io.emit('chartData', history);
+      io.emit('chartData', historyStore);
     });
   });
 
   io.on('connection', (socket) => {
     logger.info('a user connected');
+    io.emit('chartData', historyStore);
     socket.on('disconnect', () => {
       logger.info('user disconnected');
     });

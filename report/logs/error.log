@@ -33,3 +33,8 @@
 {"level":"error"}
 {"level":"error","message":"Errore input.map is not a function","stack":"TypeError: input.map is not a function\n    at candleTransformer (C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:145:15)\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:82:14\n    at wrap (C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\node_modules\\axios\\lib\\helpers\\spread.js:25:21)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
 {"level":"error","message":"Get history error:  input.map is not a function","stack":"TypeError: input.map is not a function\n    at candleTransformer (C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:145:15)\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:82:14\n    at wrap (C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\node_modules\\axios\\lib\\helpers\\spread.js:25:21)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}

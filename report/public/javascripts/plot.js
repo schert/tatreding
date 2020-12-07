@@ -88,7 +88,7 @@ var xAxis = d3.axisBottom(x);
 var timeAnnotation = techan.plot.axisannotation()
   .axis(xAxis)
   .orient('bottom')
-  .format(d3.timeFormat('%Y-%m-%d'))
+  .format(d3.timeFormat('%d/%m %H:%M'))
   .width(65)
   .translate([0, dim.plot.height]);
 
@@ -97,14 +97,14 @@ var yAxis = d3.axisRight(y);
 var ohlcAnnotation = techan.plot.axisannotation()
   .axis(yAxis)
   .orient('right')
-  .format(d3.format(',.2f'))
+  .format(d3.format(',.5f'))
   .translate([x(1), 0]);
 
 var closeAnnotation = techan.plot.axisannotation()
   .axis(yAxis)
   .orient('right')
   .accessor(candlestick.accessor())
-  .format(d3.format(',.2f'))
+  .format(d3.format(',.5f'))
   .translate([x(1), 0]);
 
 var percentAxis = d3.axisLeft(yPercent)
