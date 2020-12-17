@@ -5,8 +5,12 @@ var client = new WebSocketClient();
 const BN_CONF = require('../config/binanceConstants');
 var logger = require('../config/winston');
 var axios = require('axios');
+var ackCallbackMap = new Map();
+var eventCallbackMap = new Map();
 
 client.on('connectFailed', function(error) {
+  binanceModule.reciveCallback = null;
+  binanceModule.afterConnect = null;
   logger.error('Connect Error: ' + error.toString());
 });
 
@@ -27,20 +31,28 @@ client.on('connect', function(connection) {
     if (message.type === 'utf8') {
       logger.debug("Received: '" + message.utf8Data + "'");
       var json = JSON.parse(message.utf8Data)
-      
-      if(json.id)
-        return;
 
-      binanceModule.reciveCallback(candleTransformer('stream', json));
+      if(json.error) {
+        logger.error("Binance error: ", json.error);
+        return;
+      }
+
+      if (json.id !== undefined) {
+        if (ackCallbackMap.has(json.id)) {
+          ackCallbackMap.get(json.id)(json);
+        }
+      } else {
+        eventCallbackMap.get(json.e)(json);
+      }
     }
   });
 
-  binanceModule.subscribe = function(param) {
+  binanceModule.unsubscribe = function(param) {
     if (connection.connected) {
       var obj = {
-        "method": "SUBSCRIBE",
+        "method": "UNSUBSCRIBE",
         "params": param,
-        "id": +new Date()
+        "id": addEventCallback()
       }
       connection.sendUTF(JSON.stringify(obj));
     }
@@ -48,14 +60,41 @@ client.on('connect', function(connection) {
     return obj.id;
   }
 
-  binanceModule.send = function(param) {
+  binanceModule.unsubscribeAll = function(callback) {
+
     if (connection.connected) {
       var obj = {
-        "method": param.method,
-        "params": param,
-        "id": +new Date()
+        "method": "LIST_SUBSCRIPTIONS",
+        "id": addAckCallback(function(message) {
+          binanceModule.unsubscribe(message.result);
+
+          if(callback)
+            callback();
+        })
       }
+
       connection.sendUTF(JSON.stringify(obj));
+      return obj.id;
+    }
+
+    return obj.id;
+  }
+
+  binanceModule.subscribe = function(param) {
+    if (connection.connected) {
+        var events = param.map(function(d) {
+          return {name : d.split('@')[1].split('_')[0],
+          fn: function(message) {
+            binanceModule.reciveCallback(message);
+          }}});
+
+        var obj = {
+          "method": "SUBSCRIBE",
+          "params": param,
+          "id": addEventCallback(events)
+        }
+        connection.sendUTF(JSON.stringify(obj));
+
       return obj.id;
     }
   }
@@ -64,14 +103,53 @@ client.on('connect', function(connection) {
 });
 
 binanceModule.connect = function(afterConnect, reciveCallback) {
-  if (!binanceModule.connection || !binanceModule.connection.connected) {
+  if(!binanceModule.afterConnect) {
     binanceModule.reciveCallback = reciveCallback;
     binanceModule.afterConnect = afterConnect;
-    return client.connect(BN_CONF.WS_URL);
+    return client.connect(BN_CONF.WS_URL + (+new Date()));
+  } else {
+    binanceModule.reciveCallback = reciveCallback;
+    binanceModule.afterConnect = afterConnect;
+    binanceModule.afterConnect();
   }
 }
 
-binanceModule.getCandleHistory = function(symbol, interval, startTime, endTime, callback) {
+function addAckCallback(fun) {
+  return addEventCallback(null, fun);
+}
+
+function addEventCallback(eventsCalback, ackCallback) {
+  var id = ackCallbackMap.size;
+
+  ackCallbackMap.set(id, function(params) {
+    if (ackCallback) {
+      ackCallback(params);
+    }
+    ackCallbackMap.delete(id);
+  });
+
+  if (eventsCalback) {
+    eventsCalback.forEach((eve, i) => {
+      eventCallbackMap.set(eve.name, eve.fn);
+    });
+  }
+
+  return id;
+}
+
+binanceModule.getCandleHistory = function(symbol, interval, startTime, endTime, callback, limit) {
+  var result = [];
+  getMultipleCandle(symbol, interval, startTime, endTime, function(res) {
+    if (res == null) {
+      callback(result);
+      return;
+    }
+
+    result = result.concat(res);
+  }, limit);
+}
+
+function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit) {
   axios.all([
     axios({
       method: 'get',
@@ -80,14 +158,45 @@ binanceModule.getCandleHistory = function(symbol, interval, startTime, endTime, 
         interval: interval,
         symbol: symbol,
         startTime: startTime,
-        endTime: endTime
+        endTime: endTime,
+        limit: limit ? limit : 1000
       }
     })
   ]).then(axios.spread((response) => {
     callback(candleTransformer('history', response.data));
+    var startNewTime = response.data[response.data.length - 1][6];
+    if (startNewTime < endTime) {
+      getMultipleCandle(symbol, interval, startNewTime, endTime, callback, limit);
+    } else {
+      callback(null);
+    }
   })).catch(error => {
     logger.error("Get history error: ", error);
   });
+}
+
+binanceModule.timeEqualComparetor = function timeEqualComparetor(type, obj1, obj2) {
+  // m -> minutes; h -> hours; d -> days; w -> weeks; M -> months
+  // 1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+  switch (type.substr(type.length - 1)) {
+    case 'm':
+      return obj1.Date.getMinutes() == obj2.Date.getMinutes();
+    case 'h':
+      return obj1.Date.getHours() == obj2.Date.getHours();
+    case 'd':
+      return obj1.Date.getDate() == obj2.Date.getDate();
+    case 'w':
+      return Math.floor(obj1.Date.getDate() / 7) == Math.floor(obj2.Date.getDate() / 7);
+    case 'M':
+      return obj1.Date.getMonth() == obj2.Date.getMonth();
+  }
+}
+
+function tryReconnect(connection) {
+  logger.error("binance socket not connected: ", connection);
+  logger.info("try reconnect");
+
+
 }
 
 function candleTransformer(typeIn, input) {
@@ -122,7 +231,7 @@ function candleTransformer(typeIn, input) {
       }
 
       return {
-        "Date": new Date(input.k.t),
+        "Date": new Date(input.k.T),
           "Open": input.k.o,
           "High": input.k.h,
           "Low": input.k.l,
@@ -149,7 +258,7 @@ function candleTransformer(typeIn, input) {
         var out = Array();
         input.map((message) => {
           out.push({
-            "Date": new Date(message[0]),
+            "Date": new Date(message[6]),
             "Open": message[1],
             "High": message[2],
             "Low": message[3],
@@ -162,5 +271,6 @@ function candleTransformer(typeIn, input) {
 
   return null;
 }
+binanceModule.candleTransformer = candleTransformer;
 
 module.exports = binanceModule;

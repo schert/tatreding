@@ -4,40 +4,70 @@ module.exports = function(io) {
   var logger = require('../config/winston');
   var binanceModule = require('../modules/binanceModule');
   var utils = require('../modules/utils');
+  var mysqlConnection = require('../modules/mysql');
 
   /* GET home page. */
-  router.get('/', function(req, res, next) {
-    res.render('index', {
-      page: 'Home',
-      menuId: 'home'
-    });
-  });
+  router.get('/:symbolFrom/:symbolTo/:window/:timing', function(req, res, next) {
 
-  var startTime = new Date();
-  var endTime = new Date(startTime);
-  var historyStore;
-  startTime.setHours(startTime.getHours() - 2);
-  binanceModule.getCandleHistory('XRPEUR', '1m', +startTime, +endTime, (history) => {
-    historyStore = history;
-    binanceModule.connect(() => {
-      binanceModule.subscribe([
-        'xrpeur@kline_1m'
-      ]);
-    }, (message) => {
-      var obj = history.pop();
-      if(obj.Date.getMinutes() == message.Date.getMinutes()) {
-        history.push(message);
-      } else {
-        history.push(obj);
-        history.push(message);
-      }
-      io.emit('chartData', historyStore);
+    var wind = req.params.window;
+    var timing = req.params.timing;
+    var symbolTo = req.params.symbolTo;
+    var symbolFrom = req.params.symbolFrom;
+
+    mysqlConnection.executeQueries({sql : 'select * from manual_orders'}).then(response => {
+      res.render('index', {
+        page: 'Home',
+        menuId: 'home',
+        orders : response
+      });
+    }).catch(function(error) {
+        logger.error('error execute query: ', error.message);
+    });
+
+    var startTime = new Date();
+    var endTime = new Date(startTime);
+    startTime.setHours(startTime.getHours() - wind);
+
+    binanceModule.getCandleHistory((symbolFrom + symbolTo).toUpperCase(), timing, +startTime, +endTime, (history) => {
+      historyStore = history;
+
+      io.emit('chartData', {
+        realtime: false,
+        update: false,
+        data: historyStore
+      });
+
+      binanceModule.connect(() => {
+        binanceModule.unsubscribeAll(()=> {
+          binanceModule.subscribe([
+            symbolFrom + symbolTo + '@kline_' + timing
+          ], "kline");
+        })
+      }, (message) => {
+        message = binanceModule.candleTransformer('stream', message);
+        var update = false;
+        var obj = historyStore.pop();
+
+        if (obj) {
+          if (binanceModule.timeEqualComparetor(timing, obj, message)) {
+            update = true;
+          } else {
+            historyStore.push(obj);
+          }
+        }
+
+        historyStore.push(message);
+        io.emit('chartData', {
+          update: update,
+          data: [message],
+          realtime: true
+        });
+      });
     });
   });
 
   io.on('connection', (socket) => {
     logger.info('a user connected');
-    io.emit('chartData', historyStore);
     socket.on('disconnect', () => {
       logger.info('user disconnected');
     });

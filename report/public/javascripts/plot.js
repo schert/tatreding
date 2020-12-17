@@ -316,16 +316,20 @@ svg.append("g")
   .attr("class", "supstances analysis")
   .attr("clip-path", "url(#ohlcClip)");
 
-d3.select("button").on("click", reset);
-
 
 // d3.csv("data.csv", function(error, data) {
-socket.on('chartData', function(data) {
-  var windows = 200;
-  var accessor = candlestick.accessor(),
-    indicatorPreRoll = data.length > windows ? data.length - windows : 0; // Don't show where indicators don't have data
+var data = [];
+socket.on('chartData', function(dataObj) {
 
-  data = data.map(function(d) {
+  if (data.length == 0 && dataObj.realtime) {
+    return;
+  }
+
+  var accessor = candlestick.accessor(),
+    indicatorPreRoll = 0; // Don't show where indicators don't have data
+
+  dataIn = dataObj.data;
+  dataIn = dataIn.map(function(d) {
     return {
       date: parseDate(d.Date),
       open: +d.Open,
@@ -334,7 +338,26 @@ socket.on('chartData', function(data) {
       close: +d.Close,
       volume: +d.Volume
     };
-  }).sort(function(a, b) {
+  });
+
+  dataIn.forEach((item, i) => {
+    var obj = data.pop();
+
+    if (obj) {
+      if (item.date.getTime() === obj.date.getTime()) {
+        data.push(item);
+      } else if (item.date.getTime() > obj.date.getTime()) {
+        data.push(obj);
+        data.push(item);
+      } else {
+        data.push(obj);
+      }
+    } else {
+      data.push(item);
+    }
+  });
+
+  data.sort(function(a, b) {
     return d3.ascending(accessor.d(a), accessor.d(b));
   });
 
@@ -366,49 +389,31 @@ socket.on('chartData', function(data) {
     // }
   ];
 
-  var supstanceData = [
-    // {
-    //   start: new Date(2014, 2, 11),
-    //   end: new Date(2014, 5, 9),
-    //   value: 63.64
-    // },
-    // {
-    //   start: new Date(2013, 10, 21),
-    //   end: new Date(2014, 2, 17),
-    //   value: 55.50
-    // }
-  ];
+  // var supstanceData = [
+  //   {
+  //     start: new Date(2014, 2, 11),
+  //     end: new Date(2014, 5, 9),
+  //     value: 63.64
+  //   },
+  //   {
+  //     start: new Date(2013, 10, 21),
+  //     end: new Date(2014, 2, 17),
+  //     value: 55.50
+  //   }
+  // ];
 
-  var trades = [
-    // {
-    //   date: data[67].date,
-    //   type: "buy",
-    //   price: data[67].low,
-    //   low: data[67].low,
-    //   high: data[67].high
-    // },
-    // {
-    //   date: data[100].date,
-    //   type: "sell",
-    //   price: data[100].high,
-    //   low: data[100].low,
-    //   high: data[100].high
-    // },
-    // {
-    //   date: data[130].date,
-    //   type: "buy",
-    //   price: data[130].low,
-    //   low: data[130].low,
-    //   high: data[130].high
-    // },
-    // {
-    //   date: data[170].date,
-    //   type: "sell",
-    //   price: data[170].low,
-    //   low: data[170].low,
-    //   high: data[170].high
-    // }
-  ];
+  var pathname = window.location.pathname.split('/');
+  var symbol = pathname[1]+pathname[2];
+  var supstanceData = [];
+  $.each(orders, function(k,v) {
+    if(v.symbol == symbol) {
+      supstanceData.push({
+        start: parseDate(v.time),
+        end: data[data.length-1].date,
+        value: v.price
+      });
+    }
+  });
 
   var macdData = techan.indicator.macd()(data);
   macdScale.domain(techan.scale.plot.macd(macdData).domain());
@@ -428,7 +433,7 @@ socket.on('chartData', function(data) {
   svg.select("g.crosshair.macd").call(macdCrosshair).call(zoom);
   svg.select("g.crosshair.rsi").call(rsiCrosshair).call(zoom);
   // svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
-  // svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
+  svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
 
   // svg.select("g.tradearrow").datum(trades).call(tradearrow);
 
