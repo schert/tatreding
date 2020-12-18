@@ -4,9 +4,14 @@ var WebSocketClient = require('websocket').client;
 var client = new WebSocketClient();
 const BN_CONF = require('../config/binanceConstants');
 var logger = require('../config/winston');
-var axios = require('axios');
+var axios = require('axios').default;
+const crypto = require('crypto');
+const qs = require('qs');
+
 var ackCallbackMap = new Map();
 var eventCallbackMap = new Map();
+var weightServer = new Map();
+var lastHTTPCode = 0;
 
 client.on('connectFailed', function(error) {
   binanceModule.reciveCallback = null;
@@ -32,7 +37,7 @@ client.on('connect', function(connection) {
       logger.debug("Received: '" + message.utf8Data + "'");
       var json = JSON.parse(message.utf8Data)
 
-      if(json.error) {
+      if (json.error) {
         logger.error("Binance error: ", json.error);
         return;
       }
@@ -68,7 +73,7 @@ client.on('connect', function(connection) {
         "id": addAckCallback(function(message) {
           binanceModule.unsubscribe(message.result);
 
-          if(callback)
+          if (callback)
             callback();
         })
       }
@@ -82,18 +87,21 @@ client.on('connect', function(connection) {
 
   binanceModule.subscribe = function(param) {
     if (connection.connected) {
-        var events = param.map(function(d) {
-          return {name : d.split('@')[1].split('_')[0],
+      var events = param.map(function(d) {
+        return {
+          name: d.split('@')[1].split('_')[0],
           fn: function(message) {
             binanceModule.reciveCallback(message);
-          }}});
-
-        var obj = {
-          "method": "SUBSCRIBE",
-          "params": param,
-          "id": addEventCallback(events)
+          }
         }
-        connection.sendUTF(JSON.stringify(obj));
+      });
+
+      var obj = {
+        "method": "SUBSCRIBE",
+        "params": param,
+        "id": addEventCallback(events)
+      }
+      connection.sendUTF(JSON.stringify(obj));
 
       return obj.id;
     }
@@ -103,7 +111,7 @@ client.on('connect', function(connection) {
 });
 
 binanceModule.connect = function(afterConnect, reciveCallback) {
-  if(!binanceModule.afterConnect) {
+  if (!binanceModule.afterConnect) {
     binanceModule.reciveCallback = reciveCallback;
     binanceModule.afterConnect = afterConnect;
     return client.connect(BN_CONF.WS_URL + (+new Date()));
@@ -137,9 +145,46 @@ function addEventCallback(eventsCalback, ackCallback) {
   return id;
 }
 
-binanceModule.getCandleHistory = function(symbol, interval, startTime, endTime, callback, limit) {
+binanceModule.getWallet = (callback) => {
+  getAutenticadCall(BN_CONF.API_WALLET_INFO, {}, callback);
+}
+
+binanceModule.getAllOrder = (params, callback) => {
+  getAutenticadCall(BN_CONF.API_ALL_ORDER, params, callback);
+}
+
+function getAutenticadCall(url, params, callback) {
+  testServerWeigth(() => {
+
+    params.timestamp = Date.now();
+    params.signature = getSignature(params);
+
+    axios({
+      method: 'get',
+      url: url,
+      headers : {
+        "X-MBX-APIKEY" : BN_CONF.API_APIKEY
+      },
+      params: params
+    }).then(response => {
+      setServerWeigth(BN_CONF.API_ALL_ORDER, response);
+      if(callback)
+        callback(response);
+    }).catch(error => {
+      logger.error("Get all order error: ", error);
+    });
+  });
+}
+
+function getSignature(params) {
+  return crypto.createHmac("sha256", BN_CONF.API_SECRET_KEY)
+    .update(qs.stringify(params))
+    .digest("hex");
+}
+
+binanceModule.getCandleHistory = (symbol, interval, startTime, endTime, callback, limit) => {
   var result = [];
-  getMultipleCandle(symbol, interval, startTime, endTime, function(res) {
+  getMultipleCandle(symbol, interval, startTime, endTime, (res) => {
     if (res == null) {
       callback(result);
       return;
@@ -150,7 +195,7 @@ binanceModule.getCandleHistory = function(symbol, interval, startTime, endTime, 
 }
 
 function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit) {
-  axios.all([
+  testServerWeigth(() => {
     axios({
       method: 'get',
       url: BN_CONF.API_CANDLE_HISTORY,
@@ -161,21 +206,59 @@ function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit
         endTime: endTime,
         limit: limit ? limit : 1000
       }
-    })
-  ]).then(axios.spread((response) => {
-    callback(candleTransformer('history', response.data));
-    var startNewTime = response.data[response.data.length - 1][6];
-    if (startNewTime < endTime) {
-      getMultipleCandle(symbol, interval, startNewTime, endTime, callback, limit);
-    } else {
-      callback(null);
-    }
-  })).catch(error => {
-    logger.error("Get history error: ", error);
+    }).then(response => {
+      callback(candleTransformer('history', response.data));
+      var startNewTime = response.data[response.data.length - 1][6];
+      if (startNewTime < endTime) {
+        getMultipleCandle(symbol, interval, startNewTime, endTime, callback, limit);
+      } else {
+        callback(null);
+      }
+
+      setServerWeigth(BN_CONF.API_CANDLE_HISTORY, response);
+    }).catch(error => {
+      logger.error("Get history error: ", error);
+    });
   });
 }
 
-binanceModule.timeEqualComparetor = function timeEqualComparetor(type, obj1, obj2) {
+function setServerWeigth(url, response) {
+  var headerf = [];
+  Object.keys(response.headers).forEach((item, i) => {
+    if (item.startsWith('x-mbx-')) {
+      headerf[item] = response.headers[item];
+    }
+  });
+
+  lastHTTPCode = response.status;
+  weightServer.set(url, headerf);
+}
+
+// TODO: rate test
+function testServerWeigth(success) {
+
+  if (lastHTTPCode == 429) {
+    logger.error("Rate limit error!");
+  } else {
+    success();
+  }
+}
+
+binanceModule.getOrders = () => {
+  axios({
+    method: 'post',
+    url: '/user/12345',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    data: {
+      firstName: 'Fred',
+      lastName: 'Flintstone'
+    }
+  });
+}
+
+binanceModule.timeEqualComparator = (type, obj1, obj2) => {
   // m -> minutes; h -> hours; d -> days; w -> weeks; M -> months
   // 1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
   switch (type.substr(type.length - 1)) {
@@ -193,8 +276,8 @@ binanceModule.timeEqualComparetor = function timeEqualComparetor(type, obj1, obj
 }
 
 function tryReconnect(connection) {
-  logger.error("binance socket not connected: ", connection);
-  logger.info("try reconnect");
+  logger.error("Binance socket not connected: ", connection);
+  logger.info("Try reconnect");
 
 
 }

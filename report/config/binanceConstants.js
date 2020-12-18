@@ -1,4 +1,14 @@
+var constant = {
+  BASE_API_URL : "https://api.binance.com",
+  VERSION : "v3"
+}
+
 module.exports = Object.freeze({
   WS_URL : 'wss://stream.binance.com:9443/ws/tatreding',
-  API_CANDLE_HISTORY : 'https://www.binance.com/api/v3/klines'
+  API_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/klines',
+  API_CANDLE_HISTORY : constant.BASE_API_URL+'/api/'+constant.VERSION+'/klines',
+  API_ALL_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/allOrders',
+  API_APIKEY : 'mvwJsV0mKpWGj4oW9dRv7UR05f8iXbOjxfcCaFBkmBKd4tNwVR1WKlhUUd0I2jN8',
+  API_SECRET_KEY : 'xx6h0S9su9DYLIJG417kENPnmDJpVCOKF0lfQYu1OxlmSmO5Vw6ZTtK1zO1uop1o',
+  API_WALLET_INFO : constant.BASE_API_URL+'/api/'+constant.VERSION+'/account'
 });
