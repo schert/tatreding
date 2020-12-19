@@ -34,7 +34,7 @@ client.on('connect', function(connection) {
 
   connection.on('message', function(message) {
     if (message.type === 'utf8') {
-      logger.debug("Received: '" + message.utf8Data + "'");
+
       var json = JSON.parse(message.utf8Data)
 
       if (json.error) {
@@ -146,29 +146,36 @@ function addEventCallback(eventsCalback, ackCallback) {
 }
 
 binanceModule.getWallet = (callback) => {
-  getAutenticadCall(BN_CONF.API_WALLET_INFO, {}, callback);
+  getAutenticadCall(BN_CONF.API_WALLET_INFO, 'get', {}, callback);
 }
 
 binanceModule.getAllOrder = (params, callback) => {
-  getAutenticadCall(BN_CONF.API_ALL_ORDER, params, callback);
+  getAutenticadCall(BN_CONF.API_ALL_ORDER, 'get', params, callback);
 }
 
-function getAutenticadCall(url, params, callback) {
+binanceModule.setSellStopLimit = (params, callback) => {
+  // getAutenticadCall(BN_CONF.API_ORDER, 'post', {
+  //   side: 'SELL',
+  //   type: 'STOP_LOSS_LIMIT',
+  // }, callback);
+}
+
+function getAutenticadCall(url, method, params, callback) {
   testServerWeigth(() => {
 
     params.timestamp = Date.now();
     params.signature = getSignature(params);
 
     axios({
-      method: 'get',
+      method: method,
       url: url,
-      headers : {
-        "X-MBX-APIKEY" : BN_CONF.API_APIKEY
+      headers: {
+        "X-MBX-APIKEY": BN_CONF.API_APIKEY
       },
       params: params
     }).then(response => {
       setServerWeigth(BN_CONF.API_ALL_ORDER, response);
-      if(callback)
+      if (callback)
         callback(response);
     }).catch(error => {
       logger.error("Get all order error: ", error);

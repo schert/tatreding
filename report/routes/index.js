@@ -7,22 +7,77 @@ module.exports = function(io) {
   var mysqlConnection = require('../modules/mysql');
 
   /* GET home page. */
-  router.get('/:symbolFrom/:symbolTo/:window/:timing', function(req, res, next) {
+  router.get('/:symbolFrom/:symbolTo/:window/:timing', (req, res, next) => {
 
     var wind = req.params.window;
     var timing = req.params.timing;
     var symbolTo = req.params.symbolTo;
     var symbolFrom = req.params.symbolFrom;
 
-    res.render('index', {
-      page: 'Home',
-      menuId: 'home',
-      orders: {}
-    });
-
     var startTime = new Date();
     var endTime = new Date(startTime);
     startTime.setHours(startTime.getHours() - wind);
+
+    mysqlConnection.executeQueries([{
+          sql: "select * from wallet where asset != 'EUR' and (free > 0 or locked > 0)"
+        },
+        {
+          sql: "select * from orders where symbolFrom=?",
+          params: [symbolFrom]
+        }
+      ])
+      .then((response) => {
+        res.render('index', {
+          page: 'Home',
+          menuId: 'home',
+          orders: response[1],
+          assets: response[0].map((e) => {
+            e.asset = e.asset.toLowerCase();
+            return e;
+          })
+        });
+
+        binanceModule.getCandleHistory((symbolFrom + symbolTo).toUpperCase(), timing, +startTime, +endTime, (history) => {
+          historyStore = history;
+
+          io.emit('chartData', {
+            realtime: false,
+            update: false,
+            data: historyStore
+          });
+
+          binanceModule.connect(() => {
+            binanceModule.unsubscribeAll(() => {
+              binanceModule.subscribe([
+                symbolFrom + symbolTo + '@kline_' + timing
+              ], "kline");
+            })
+          }, (raw) => {
+            switch (raw.e) {
+              case 'kline':
+                var message = binanceModule.candleTransformer('stream', raw);
+                var update = false;
+                var obj = historyStore.pop();
+
+                if (obj) {
+                  if (binanceModule.timeEqualComparator(timing, obj, message)) {
+                    update = true;
+                  } else {
+                    historyStore.push(obj);
+                  }
+                }
+
+                historyStore.push(message);
+                io.emit('chartData', {
+                  update: update,
+                  data: [message],
+                  realtime: true
+                });
+                break;
+            }
+          });
+        });
+      });
 
     binanceModule.getAllOrder({
       symbol: (symbolFrom + symbolTo).toUpperCase(),
@@ -42,7 +97,7 @@ module.exports = function(io) {
         });
       });
 
-      mysqlConnection.executeQueries(querys);
+      mysqlConnection.executeQueries(querys, true);
     });
 
     binanceModule.getWallet((response) => {
@@ -58,48 +113,20 @@ module.exports = function(io) {
         });
       });
 
-      mysqlConnection.executeQueries(querys);
+      mysqlConnection.executeQueries(querys, true);
+
+      // mysqlConnection.executeQueries('', true);
     });
+  });
 
-    binanceModule.getCandleHistory((symbolFrom + symbolTo).toUpperCase(), timing, +startTime, +endTime, (history) => {
-      historyStore = history;
+  router.post('/order', (req, res, next) => {
+    binanceModule.setSellStopLimit({
+      symbol: '',
+      quantity: '',
+      price: '',
+      stopPrice: ''
+    }, (response) => {
 
-      io.emit('chartData', {
-        realtime: false,
-        update: false,
-        data: historyStore
-      });
-
-      binanceModule.connect(() => {
-        binanceModule.unsubscribeAll(() => {
-          binanceModule.subscribe([
-            symbolFrom + symbolTo + '@kline_' + timing
-          ], "kline");
-        })
-      }, (raw) => {
-        switch (raw.e) {
-          case 'kline':
-            var message = binanceModule.candleTransformer('stream', raw);
-            var update = false;
-            var obj = historyStore.pop();
-
-            if (obj) {
-              if (binanceModule.timeEqualComparator(timing, obj, message)) {
-                update = true;
-              } else {
-                historyStore.push(obj);
-              }
-            }
-
-            historyStore.push(message);
-            io.emit('chartData', {
-              update: update,
-              data: [message],
-              realtime: true
-            });
-            break;
-        }
-      });
     });
   });
 

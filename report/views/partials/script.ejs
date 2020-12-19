@@ -6,6 +6,8 @@
 <script>
   var socket = io();
   var orders = <%- JSON.stringify(orders) %>
+  var assets = <%- JSON.stringify(assets) %>
+  var pathname = window.location.pathname.split('/');
 </script>
 <script src="/javascripts/menu.js"></script>
 <script src="/javascripts/plot.js"></script>
