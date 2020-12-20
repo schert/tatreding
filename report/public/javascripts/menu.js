@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).ready(function() {  
   var element = $('meta[name="active-menu"]').attr('content');
   $('#' + element).addClass('active');
 
@@ -9,5 +9,18 @@ $(document).ready(function() {
   });
   selector.on('change', function() {
     window.location.href = pathname[0] + '/' + $(this).val() + '/eur/' + pathname[3] + '/' + pathname[4];
-  })
+  });
+
+  var urlTimeout
+  $('#time').on('change', function() {
+    clearTimeout(urlTimeout);
+    var that = $(this);
+    urlTimeout = setTimeout(function() {
+      window.location.href = pathname[0] + '/' + pathname[1] + '/eur/' + that.val() + '/' + pathname[4];
+    },1000);
+  }).val(pathname[3]);
+
+  $('#timeing').on('change', function() {
+    window.location.href = pathname[0] + '/' + pathname[1] + '/eur/' + pathname[3] + '/' + $(this).val();
+  }).val(pathname[4]);
 });

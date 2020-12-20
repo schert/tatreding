@@ -1,3 +1,9 @@
+html { font-size:90%; }
+
 body {
   font: 1rem sans-serif;
+}
+
+#lateralMenu {
+  padding: 1em;
 }

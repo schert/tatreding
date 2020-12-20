@@ -29,6 +29,12 @@ path.candle.down {
   stroke: #FF0000;
 }
 
+.annotation text {
+  fill: white;
+  font-weight: bold;
+  font-size: 10px;
+}
+
 .closed.annotation.up path {
   fill: #00AA00;
 }
@@ -52,12 +58,6 @@ path.volume {
 
 .ma-2 path.line {
   stroke: #ff7f0e;
-}
-
-button {
-  position: absolute;
-  right: 110px;
-  top: 25px;
 }
 
 path.macd {

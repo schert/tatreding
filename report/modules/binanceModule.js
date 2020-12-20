@@ -270,15 +270,15 @@ binanceModule.timeEqualComparator = (type, obj1, obj2) => {
   // 1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
   switch (type.substr(type.length - 1)) {
     case 'm':
-      return obj1.Date.getMinutes() == obj2.Date.getMinutes();
+      return obj1.date.getMinutes() == obj2.date.getMinutes();
     case 'h':
-      return obj1.Date.getHours() == obj2.Date.getHours();
+      return obj1.date.getHours() == obj2.date.getHours();
     case 'd':
-      return obj1.Date.getDate() == obj2.Date.getDate();
+      return obj1.date.getDate() == obj2.date.getDate();
     case 'w':
-      return Math.floor(obj1.Date.getDate() / 7) == Math.floor(obj2.Date.getDate() / 7);
+      return Math.floor(obj1.date.getDate() / 7) == Math.floor(obj2.date.getDate() / 7);
     case 'M':
-      return obj1.Date.getMonth() == obj2.Date.getMonth();
+      return obj1.date.getMonth() == obj2.date.getMonth();
   }
 }
 
@@ -321,12 +321,12 @@ function candleTransformer(typeIn, input) {
       }
 
       return {
-        "Date": new Date(input.k.T),
-          "Open": input.k.o,
-          "High": input.k.h,
-          "Low": input.k.l,
-          "Close": input.k.c,
-          "Volume": input.k.v
+        date: new Date(input.k.T),
+          open: input.k.o,
+          high: input.k.h,
+          low: input.k.l,
+          close: input.k.c,
+          volume: input.k.v
       }
       case 'history':
         // [
@@ -348,12 +348,12 @@ function candleTransformer(typeIn, input) {
         var out = Array();
         input.map((message) => {
           out.push({
-            "Date": new Date(message[6]),
-            "Open": message[1],
-            "High": message[2],
-            "Low": message[3],
-            "Close": message[4],
-            "Volume": message[5]
+            date: new Date(message[6]),
+            open: message[1],
+            high: message[2],
+            low: message[3],
+            close: message[4],
+            volume: message[5]
           });
         });
         return out;

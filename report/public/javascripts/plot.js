@@ -335,12 +335,12 @@ $(document).ready(function() {
     dataIn = dataObj.data;
     dataIn = dataIn.map(function(d) {
       return {
-        date: parseDate(d.Date),
-        open: +d.Open,
-        high: +d.High,
-        low: +d.Low,
-        close: +d.Close,
-        volume: +d.Volume
+        date: parseDate(d.date),
+        open: +d.open,
+        high: +d.high,
+        low: +d.low,
+        close: +d.close,
+        volume: +d.volume
       };
     });
 
@@ -364,6 +364,8 @@ $(document).ready(function() {
     data.sort(function(a, b) {
       return d3.ascending(accessor.d(a), accessor.d(b));
     });
+
+    realtimeUpdate(data[data.length-1]);
 
     x.domain(techan.scale.plot.time(data).domain());
     y.domain(techan.scale.plot.ohlc(data.slice(indicatorPreRoll)).domain());

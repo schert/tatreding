@@ -1,8 +1,27 @@
 <div class="d-flex flex-column flex-md-row align-items-center p-1 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-  <select id="symbol" class="custom-select w-auto"></select>
-  <h5 class="my-0 ml-md-2 font-weight-normal"><i class="fas fa-search-dollar"></i> Tatreding</h5>
-  <nav class="my-2 my-md-0 mr-md-3 mr-md-auto">
-    <a class="p-2 text-dark" href="#">Home</a>
-  </nav>
-  <a class="btn btn-outline-primary" href="#">Run</a>
+  <h5 class="my-0 mr-md-2 font-weight-normal"><i class="fas fa-search-dollar"></i> Tatreding</h5>
+  <form class="form-inline mr-md-auto">
+    <nav class="my-2 my-md-0 mr-md-3 mr-md-auto">
+      <select id="symbol" class="custom-select w-auto"></select>
+      <input type="number" id="time" value="10" style="width: 5em" class="form-control d-inline" />
+      <select id="timeing" class="custom-select w-auto">
+        <option value="1m">1m</option>
+        <option value="3m">3m</option>
+        <option value="5m">5m</option>
+        <option value="15m">15m</option>
+        <option value="30m">30m</option>
+        <option value="1h">1h</option>
+        <option value="2h">2h</option>
+        <option value="4h">4h</option>
+        <option value="6h">6h</option>
+        <option value="8h">8h</option>
+        <option value="12h">12h</option>
+        <option value="1d">1d</option>
+        <option value="3d">3d</option>
+        <option value="1w">1w</option>
+        <option value="1M">1M</option>
+      </select>
+    </nav>
+  </form>
+  <a tabindex="0" id="globelNoStopLimit" data-trigger="hover" data-container="body" data-toggle="popover" data-placement="left" data-content="NO STOP"><i class="fas fa-exclamation-triangle text-danger"></i></a>
 </div>
