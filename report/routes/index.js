@@ -19,7 +19,7 @@ module.exports = function(io) {
     startTime.setHours(startTime.getHours() - wind);
 
     mysqlConnection.executeQueries([{
-          sql: "select * from wallet where asset != 'EUR' and (free > 0 or locked > 0)"
+          sql: "select * from wallet where free > 0 or locked > 0"
         },
         {
           sql: "select * from orders where symbolFrom=?",

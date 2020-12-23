@@ -1,6 +1,7 @@
 $(document).ready(function() {
   $('[data-toggle="popover"]').popover();
   $('.asset').text(asset);
+  $('.assetTo').text(assetTo);
   $('input.asset').attr('placeholder', asset.toUpperCase());
 });
 

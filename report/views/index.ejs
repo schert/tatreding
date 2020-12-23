@@ -11,57 +11,58 @@
     <div class="d-flex justify-content-between">
       <div id="chartContainer" style="width:80%"></div>
       <form id="lateralMenu">
-        <label class="sr-only" for="euroAmountt">Amount&nbsp;<span class="asset"></span></label>
+        <div id="wallet" class="mb-2 text-left"><span class="text-uppercase assetTo"></span>: <span class="assetToValue font-weight-bold"></span><br><span class="text-uppercase asset"></span>: <span class="assetValue"></span></div>
+        <label class="sr-only" for="assetAmount">Amount&nbsp;<span class="asset"></span></label>
         <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text bg-warning">Amount&nbsp;<span class="text-uppercase asset"></span></div>
           </div>
-          <input class="form-control" type="number" id="assetAmount" name="assetAmount" value="0" step="0.00001">
+          <input class="form-control" type="number" min="0" id="assetAmount" name="assetAmount" value="0" step="0.00001">
         </div>
-        <label class="sr-only" for="euroAmountt">Amount</label>
+        <label class="sr-only" for="euroAmount">Amount</label>
         <div class="input-group mb-4 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text">Amount €</div>
           </div>
-          <input class="form-control" type="number" id="euroAmount" name="euroAmount" value="0" step="0.01">
+          <input class="form-control" type="number" min="0" id="euroAmount" name="euroAmount" value="0" step="0.01">
         </div>
         <label class="sr-only" for="riskPer">Risk</label>
         <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text">Risk %</div>
           </div>
-          <input class="form-control" type="number" id="riskPer" name="riskPer" value="10">
+          <input class="form-control" type="number" min="0" id="riskPer" name="riskPer" value="10">
         </div>
         <label class="sr-only" for="euroRisk">Euro</label>
         <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text">€</div>
           </div>
-          <input class="form-control" type="number" id="euroRisk" name="euroRisk" value="0" step="0.01">
+          <input class="form-control" type="number" min="0" id="euroRisk" name="euroRisk" value="0" step="0.01">
         </div>
         <label class="sr-only" for="limitPrice">Limit Price</label>
         <div class="input-group mb-4 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text bg-warning">Limit Price</div>
           </div>
-          <input class="form-control" type="number" id="limitPrice" name="limitPrice" value="0" step="0.00001">
+          <input class="form-control" type="number" min="0" id="limitPrice" name="limitPrice" value="0" step="0.00001">
         </div>
         <label class="sr-only" for="stopPer">Stop %</label>
         <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text">Stop %</div>
           </div>
-          <input class="form-control" type="number" id="stopPer" name="stopPer" value="10">
+          <input class="form-control" type="number" min="0" id="stopPer" name="stopPer" value="10">
         </div>
         <label class="sr-only" for="stopPrice">Stop Price</label>
         <div class="input-group mb-4 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text bg-warning">Stop Price</div>
           </div>
-          <input class="form-control" type="number" id="stopPrice" name="stopPrice" value="0" step="0.00001">
+          <input class="form-control" type="number" min="0" id="stopPrice" name="stopPrice" value="0" step="0.00001">
         </div>
         <button type="button" class="btn btn-danger mb-2">STOP LIMIT (SELL)</button>
-        <div id="noStopLimit" class="display-1"><i class="fas fa-exclamation-triangle text-danger"></i></div>
+        <div id="noStopLimit" class="display-1" style="display:none"><i class="fas fa-exclamation-triangle text-danger"></i></div>
       </form>
     </div>
   </div>
