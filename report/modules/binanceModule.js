@@ -154,10 +154,10 @@ binanceModule.getAllOrder = (params, callback) => {
 }
 
 binanceModule.setSellStopLimit = (params, callback) => {
-  // getAutenticadCall(BN_CONF.API_ORDER, 'post', {
-  //   side: 'SELL',
-  //   type: 'STOP_LOSS_LIMIT',
-  // }, callback);
+  params.side = 'SELL';
+  params.type = 'STOP_LOSS_LIMIT';
+
+  getAutenticadCall(BN_CONF.API_ORDER, 'post', params, callback);
 }
 
 function getAutenticadCall(url, method, params, callback) {

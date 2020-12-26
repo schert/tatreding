@@ -24,6 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'node_modules/techan/dist')));
 app.use(express.static(path.join(__dirname, 'node_modules/d3/build')));
 app.use(express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
+app.use(express.static(path.join(__dirname, 'node_modules/sweetalert2/dist')));
 app.use(express.static(path.join(__dirname, 'node_modules/jquery/dist')));
 app.use(express.static(path.join(__dirname, 'node_modules/popper.js/dist')));
 app.use(express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free')));

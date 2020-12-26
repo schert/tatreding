@@ -446,19 +446,25 @@ $(document).ready(function() {
     yInit = y.copy();
     yPercentInit = yPercent.copy();
 
+    if(previousDomanin.x)
+      resetZoom();
+      
     draw();
   });
 
-  function reset() {
-    zoom.scale(1);
-    zoom.translate([0, 0]);
+  function resetZoom() {
+    x.zoomable().domain(previousDomanin.x);
+    y.domain(previousDomanin.y);
+    yPercent.domain(previousDomanin.yPercent);
+
     draw();
   }
 
+  var previousDomanin = {};
   function zoomed() {
-    x.zoomable().domain(d3.event.transform.rescaleX(zoomableInit).domain());
-    y.domain(d3.event.transform.rescaleY(yInit).domain());
-    yPercent.domain(d3.event.transform.rescaleY(yPercentInit).domain());
+    x.zoomable().domain(previousDomanin.x = d3.event.transform.rescaleX(zoomableInit).domain());
+    y.domain(previousDomanin.y = d3.event.transform.rescaleY(yInit).domain());
+    yPercent.domain(previousDomanin.yPercent = d3.event.transform.rescaleY(yPercentInit).domain());
 
     draw();
   }

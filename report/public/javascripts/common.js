@@ -10,10 +10,11 @@ function realtimeUpdate(obj) {
   assetPrice = obj.close;
 }
 
-function apiCall(url, success, ext) {
+function apiCall(url, params, success, ext) {
   var settings = {
     url: url,
-    method: 'GET',
+    method: 'POST',
+    data : params,
     success: success,
     error: function() {
       console.log('Si è verificato un errore');

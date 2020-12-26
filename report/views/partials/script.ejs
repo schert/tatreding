@@ -1,10 +1,12 @@
 <script src="/jquery.min.js"></script>
 <script src="/popperCustom.min.js"></script>
 <script src="/js/bootstrap.min.js"></script>
+<script src="/sweetalert2.all.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/d3.min.js"></script>
 <script src="/techan.min.js"></script>
 <script>
+  var baseUrl = "http://<%= baseUrl %>";
   var socket = io();
   var orders = <%- JSON.stringify(orders) %>
   var assets = <%- JSON.stringify(assets) %>

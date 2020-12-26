@@ -5,7 +5,9 @@ $(document).ready(function() {
   var selector = $("#symbol");
 
   $.each(assets, function(k, v) {
-    selector.append('<option value="' +v.asset + '" '+(v.asset == pathname[1] ? "selected" : "")+' '+ ((v.asset == 'eur' || v.asset == 'twt') ? "disabled" : "") +'>' + v.asset.toUpperCase() + '</option>');
+    if(v.free > 0 || v.locked > 0) {
+      selector.append('<option value="' +v.asset + '" '+(v.asset == pathname[1] ? "selected" : "")+' '+ ((v.asset == 'eur' || v.asset == 'twt') ? "disabled" : "") +'>' + v.asset.toUpperCase() + '</option>');
+    }
   });
   selector.on('change', function() {
     window.location.href = pathname[0] + '/' + $(this).val() + '/eur/' + pathname[3] + '/' + pathname[4];

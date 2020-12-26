@@ -19,7 +19,7 @@ module.exports = function(io) {
     startTime.setHours(startTime.getHours() - wind);
 
     mysqlConnection.executeQueries([{
-          sql: "select * from wallet where free > 0 or locked > 0"
+          sql: "select * from wallet"
         },
         {
           sql: "select * from orders where symbolFrom=?",
@@ -31,6 +31,7 @@ module.exports = function(io) {
           page: 'Home',
           menuId: 'home',
           orders: response[1],
+          baseUrl : req.headers.host,
           assets: response[0].map((e) => {
             e.asset = e.asset.toLowerCase();
             return e;
@@ -84,15 +85,14 @@ module.exports = function(io) {
       startTime: +startTime
       // endTime: +endTime
     }, (response) => {
-      var json = JSON.stringify(response.data);
       var data = response.data;
       var querys = [];
       data.forEach((item, i) => {
         querys.push({
           sql: "INSERT INTO orders (clientOrderId, symbolFrom, symbolTo, side, type, quantity, price, time, response) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) \
           ON DUPLICATE KEY UPDATE symbolFrom=?, symbolTo=?, side=?, type=?, quantity=?, price=?, time=?, response=?",
-          params: [item.clientOrderId, symbolFrom, symbolTo, item.side, item.type, item.executedQty, item.price, new Date(item.updateTime), json,
-            symbolFrom, symbolTo, item.side, item.type, item.executedQty, item.price, new Date(item.updateTime), json
+          params: [item.clientOrderId, symbolFrom, symbolTo, item.side, item.type, item.executedQty, item.price, new Date(item.updateTime), JSON.stringify(item),
+            symbolFrom, symbolTo, item.side, item.type, item.executedQty, item.price, new Date(item.updateTime), JSON.stringify(item)
           ]
         });
       });
@@ -121,12 +121,13 @@ module.exports = function(io) {
 
   router.post('/order', (req, res, next) => {
     binanceModule.setSellStopLimit({
-      symbol: '',
-      quantity: '',
-      price: '',
-      stopPrice: ''
+      timeInForce : 'GTC',
+      symbol: req.body.symbol,
+      quantity: req.body.quantity,
+      price: req.body.limitPrice,
+      stopPrice: req.body.stopPrice
     }, (response) => {
-
+      res.json(response);
     });
   });
 

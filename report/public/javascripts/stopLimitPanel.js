@@ -8,6 +8,8 @@ var stopPer = $('#stopPer');
 var stopPrice = $('#stopPrice');
 var walletAsset;
 var updateFocus = {};
+var setStopButton = $('#setStopButton');
+var totalAsset = $('#totalAsset');
 
 $(document).ready(function() {
   $.each(assets, function(k, v) {
@@ -17,37 +19,30 @@ $(document).ready(function() {
     }
   });
 
+  totalAsset.on('click', function(event) {
+    event.preventDefault()
+    assetAmount.val(walletAsset.free);
+    assetAmount.trigger('keyup');
+  });
+
   assetAmount.on('keyup mouseup', function() {
+    updateFocus.amount = $(this);
+
     var assetAmountVal = $(this).val();
-    var riskPerVal = riskPer.val();
-    var stopPerVal = stopPer.val();
     if (!assetAmountVal || isNaN(assetAmountVal) || assetAmountVal <= 0)
       return;
 
-    var assetAmountVal = parseFloat(assetAmountVal);
     var amount = parseFloat(assetAmountVal);
     var assetPrice = getAssetPrice();
     euroAmount.val(euroAmountCalc(amount, assetPrice));
 
-    if (!riskPerVal || isNaN(riskPerVal) || riskPerVal < 0)
-      return;
-
-    var limitP = limitPriceCalc(parseFloat(riskPerVal), assetPrice);
-    limitPrice.val(limitP);
-    euroRisk.val(euroRiskCalc(amount, assetPrice, limitP));
-
-    if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0)
-      return;
-
-    stopPrice.val(stopPriceCalc(assetPrice, parseFloat(stopPerVal), limitP));
-
-    updateFocus.amount = $(this);
+    stopLimitUpdate({close : assetPrice});
   });
 
   euroAmount.on('keyup mouseup', function() {
+    updateFocus.amount = $(this);
+
     var euroAmountVal = $(this).val();
-    var riskPerVal = riskPer.val();
-    var stopPerVal = stopPer.val();
     if (!euroAmountVal || isNaN(euroAmountVal) || euroAmountVal < 0)
       return;
 
@@ -55,25 +50,14 @@ $(document).ready(function() {
     var amount = amountAssetCalc(parseFloat(euroAmountVal), assetPrice);
     assetAmount.val(amount);
 
-    if (!riskPerVal || isNaN(riskPerVal) || riskPerVal < 0)
-      return;
-
-    var limitP = limitPriceCalc(parseFloat(riskPerVal), assetPrice);
-    limitPrice.val(limitP);
-    euroRisk.val(euroRiskCalc(amount, assetPrice, limitP));
-
-    if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0)
-      return;
-
-    stopPrice.val(stopPriceCalc(assetPrice, parseFloat(stopPerVal), limitP));
-
-    updateFocus.amount = $(this);
+    stopLimitUpdate({close : assetPrice});
   });
 
   riskPer.on('keyup mouseup', function() {
+    updateFocus.risk = $(this);
+
     var assetAmountVal = assetAmount.val();
     var riskPerVal = $(this).val();
-    var stopPerVal = stopPer.val();
     if (!assetAmountVal || isNaN(assetAmountVal) || assetAmountVal <= 0)
       return;
 
@@ -87,19 +71,16 @@ $(document).ready(function() {
     limitPrice.val(limitP);
     euroRisk.val(euroRiskCalc(amount, assetPrice, limitP));
 
-    if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0)
-      return;
-
-    stopPrice.val(stopPriceCalc(assetPrice, parseFloat(stopPerVal), limitP));
-
-    updateFocus.risk = $(this);
+    stopLimitUpdate({close : assetPrice});
   });
 
   euroRisk.on('keyup mouseup', function() {
+    updateFocus.risk = $(this);
+
     var assetAmountVal = assetAmount.val();
     var euroRiskVal = $(this).val();
-    var stopPerVal = stopPer.val();
-    if (!stopPerVal || isNaN(stopPerVal) || assetAmountVal <= 0)
+
+    if (!assetAmountVal || isNaN(assetAmountVal) || assetAmountVal <= 0)
       return;
 
     var amount = parseFloat(assetAmountVal);
@@ -110,22 +91,18 @@ $(document).ready(function() {
 
     var percAsset = percRiskCalc(parseFloat(euroRiskVal), assetPrice, amount);
     riskPer.val(percAsset);
-    var limitP = limitPriceCalc(percAsset, assetPrice);
-    limitPrice.val(limitP);
+    limitPrice.val(limitPriceCalc(percAsset, assetPrice));
 
-    if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0)
-      return;
-
-    stopPrice.val(stopPriceCalc(assetPrice, parseFloat(stopPerVal), limitP));
-
-    updateFocus.risk = $(this);
+    stopLimitUpdate({close : assetPrice});
   });
 
   limitPrice.on('keyup mouseup', function() {
+    updateFocus.risk = $(this);
+
     var assetAmountVal = assetAmount.val();
     var euroRiskVal = euroRisk.val();
-    var stopPerVal = stopPer.val();
     var limitPriceVal = $(this).val();
+
     if (!assetAmountVal || isNaN(assetAmountVal) || assetAmountVal <= 0)
       return;
 
@@ -142,37 +119,67 @@ $(document).ready(function() {
 
     riskPer.val(percRiskCalc(parseFloat(euroRiskVal), assetPrice, amount));
 
-    if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0)
-      return;
-
-    stopPrice.val(stopPriceCalc(assetPrice, parseFloat(stopPerVal), parseFloat(limitPriceVal)));
-
-    updateFocus.stop = $(this);
+    stopLimitUpdate({close : assetPrice});
   })
 
   stopPer.on('keyup mouseup', function() {
+    updateFocus.stop = $(this);
+
     var stopPerVal = $(this).val();
     var limitPriceVal = limitPrice.val();
+
     if (!stopPerVal || isNaN(stopPerVal) || stopPerVal < 0 ||
       !limitPriceVal || isNaN(limitPriceVal) || limitPriceVal <= 0)
       return;
 
     stopPrice.val(stopPriceCalc(getAssetPrice(), parseFloat(stopPerVal), parseFloat(limitPriceVal)));
-
-    updateFocus.stop = $(this);
   });
 
   stopPrice.on('keyup mouseup', function() {
+    updateFocus.stop = $(this);
+
     var stopPriceVal = $(this).val();
     var limitPriceVal = limitPrice.val();
+
     if (!stopPriceVal || isNaN(stopPriceVal) || stopPriceVal < 0 ||
       !limitPriceVal || isNaN(limitPriceVal) || limitPriceVal <= 0)
       return;
 
     var assetPrice = getAssetPrice();
     stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPriceVal)));
+  });
 
-    updateFocus.stop = $(this);
+  setStopButton.on('click', function() {
+    var stopPriceVal = stopPrice.val();
+    var assetAmountVal = assetAmount.val();
+    var limitPriceVal = limitPrice.val();
+    var euroRiskVal = euroRisk.val();
+    var euroAmountVal = euroAmount.val();
+
+    Swal.fire({
+      title: 'Setup STOP PRICE LIMIT?',
+      html: "<div class='row'><div class='col-6 text-right'>AMOUNT</div><div class='col-6 text-left'>" + assetAmountVal + " " + asset.toUpperCase() + " (" + euroAmountVal + " €)</div></div><div class='row'><div class='col-6 text-right'>STOP</div><div class='col-6 text-left'>" + stopPriceVal + " " + asset.toUpperCase() + "</div></div><div class='row'><div class='col-6 text-right'>LIMIT</div><div class='col-6 text-left'>" + limitPriceVal + " " + asset.toUpperCase() + "</div></div><div class='row'><div class='col-6 text-right'>RISK</div><div class='col-6 text-left'>" + euroRiskVal + " €</div></div>",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        apiCall(baseUrl + '/order', {
+          symbol: (asset+assetTo).toUpperCase(),
+          quantity: assetAmountVal,
+          limitPrice: limitPriceVal,
+          stopPrice: stopPriceVal
+        }, function(data) {
+          Swal.fire(
+            'SETTED!',
+            'STOP PRICE LIMIT SETTED',
+            'success'
+          )
+        });
+      }
+    })
   });
 });
 
@@ -231,9 +238,9 @@ function stopLimitUpdate(obj) {
     var stopPriceVal = stopPrice.val();
     if (!(!stopPriceVal || isNaN(stopPriceVal) || stopPriceVal < 0) &&
       !(!limitPVal || isNaN(limitPVal) || limitPVal < 0)) {
-    stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPVal)));
+      stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPVal)));
+    }
   }
-}
 }
 
 function getAssetPrice() {
