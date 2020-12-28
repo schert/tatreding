@@ -7,10 +7,10 @@ module.exports = function(io) {
   var mysqlConnection = require('../modules/mysql');
 
   /* GET home page. */
-  router.get('/:symbolFrom/:symbolTo/:window/:timing', (req, res, next) => {
+  router.get('/:symbolFrom/:symbolTo/:window?/:timing?', (req, res, next) => {
 
-    var wind = req.params.window;
-    var timing = req.params.timing;
+    var wind = req.params.window ? req.params.window : 1;
+    var timing = req.params.timing ? req.params.timing : '1m';
     var symbolTo = req.params.symbolTo;
     var symbolFrom = req.params.symbolFrom;
 
@@ -18,20 +18,34 @@ module.exports = function(io) {
     var endTime = new Date(startTime);
     startTime.setHours(startTime.getHours() - wind);
 
+    collectInfo(symbolFrom, symbolTo, startTime);
+
     mysqlConnection.executeQueries([{
-          sql: "select * from wallet"
-        },
-        {
-          sql: "select * from orders where symbolFrom=?",
-          params: [symbolFrom]
-        }
-      ])
-      .then((response) => {
+        sql: "select * from wallet"
+      },
+      {
+        sql: "select * from orders where symbolFrom=? and time>=?",
+        params: [symbolFrom, startTime]
+      }
+    ]).then((response) => {
+
+      binanceModule.getAllOpenOrder({}, (bRes) => {
+        var alarms = [];
+        response[0].forEach((item, i) => {
+          if (item.free > 0 || item.locked > 0) {
+            var filter = bRes.data.filter(value => "/^"+item.asset+"/i".test(value.symbol));
+            if (filter.length == 0 && item.asset != 'EUR') {
+              alarms.push(item);
+            }
+          }
+        });
+
         res.render('index', {
           page: 'Home',
           menuId: 'home',
           orders: response[1],
-          baseUrl : req.headers.host,
+          baseUrl: req.headers.host,
+          alarms: alarms,
           assets: response[0].map((e) => {
             e.asset = e.asset.toLowerCase();
             return e;
@@ -79,7 +93,35 @@ module.exports = function(io) {
           });
         });
       });
+    }).catch((error) => {
+      logger.error('Query error waller and ordes', error);
+    });
+  });
 
+  router.post('/order', (req, res, next) => {
+    binanceModule.setSellStopLimit({
+      timeInForce: 'GTC',
+      symbol: req.body.symbol,
+      quantity: parseFloat(req.body.quantity),
+      price: parseFloat(req.body.limitPrice),
+      stopPrice: parseFloat(req.body.stopPrice)
+    }, (response) => {
+      if(response.response.data.code !=0) {
+        res.json(response.response.data, 400);
+      } else {
+        res.json(response.data);
+      }
+    });
+  });
+
+  io.on('connection', (socket) => {
+    logger.info('a user connected');
+    socket.on('disconnect', () => {
+      logger.info('user disconnected');
+    });
+  });
+
+  function collectInfo(symbolFrom, symbolTo, startTime) {
     binanceModule.getAllOrder({
       symbol: (symbolFrom + symbolTo).toUpperCase(),
       startTime: +startTime
@@ -97,7 +139,9 @@ module.exports = function(io) {
         });
       });
 
-      mysqlConnection.executeQueries(querys, true);
+      mysqlConnection.executeQueries(querys, true).catch((error) => {
+        logger.error('Query error get all ordes', error);
+      });
     });
 
     binanceModule.getWallet((response) => {
@@ -113,30 +157,12 @@ module.exports = function(io) {
         });
       });
 
-      mysqlConnection.executeQueries(querys, true);
-
+      mysqlConnection.executeQueries(querys, true).catch((error) => {
+        logger.error('Query error insert wallet', error);
+      });
       // mysqlConnection.executeQueries('', true);
     });
-  });
-
-  router.post('/order', (req, res, next) => {
-    binanceModule.setSellStopLimit({
-      timeInForce : 'GTC',
-      symbol: req.body.symbol,
-      quantity: req.body.quantity,
-      price: req.body.limitPrice,
-      stopPrice: req.body.stopPrice
-    }, (response) => {
-      res.json(response);
-    });
-  });
-
-  io.on('connection', (socket) => {
-    logger.info('a user connected');
-    socket.on('disconnect', () => {
-      logger.info('user disconnected');
-    });
-  });
+  }
 
   return router;
 }

@@ -19,6 +19,11 @@ $(document).ready(function() {
     }
   });
 
+  $.each(alarms, function(i, item) {
+    if(item.asset == asset)
+      $('#noStopLimit').show()
+  });
+
   totalAsset.on('click', function(event) {
     event.preventDefault()
     assetAmount.val(walletAsset.free);
@@ -146,7 +151,7 @@ $(document).ready(function() {
       return;
 
     var assetPrice = getAssetPrice();
-    stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPriceVal)));
+    stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPriceVal), assetPrice));
   });
 
   setStopButton.on('click', function() {
@@ -238,7 +243,7 @@ function stopLimitUpdate(obj) {
     var stopPriceVal = stopPrice.val();
     if (!(!stopPriceVal || isNaN(stopPriceVal) || stopPriceVal < 0) &&
       !(!limitPVal || isNaN(limitPVal) || limitPVal < 0)) {
-      stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPVal)));
+      stopPer.val(stopPerCalc(parseFloat(stopPriceVal), parseFloat(limitPVal), assetPrice));
     }
   }
 }
@@ -264,13 +269,13 @@ function euroRiskCalc(amount, assetPrice, limitP) {
 }
 
 function stopPriceCalc(assetPrice, stopPer, limitP) {
-  return limitP + ((stopPer * assetPrice) / 100);
+  return limitP + ((stopPer * (assetPrice - limitP)) / 100);
 }
 
 function percRiskCalc(euroRisk, assetP, amount) {
   return (100 * euroRisk) / (assetP * amount);
 }
 
-function stopPerCalc(stopPerice, limitP) {
-  return ((100 * stopPerice) / limitP) - 100;
+function stopPerCalc(stopPerice, limitP, assetPrice) {
+  return (stopPerice - limitP) / ((assetPrice - limitP) / 100);
 }

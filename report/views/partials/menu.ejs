@@ -1,27 +1,29 @@
 <div class="d-flex flex-column flex-md-row align-items-center p-1 px-md-4 mb-3 bg-white border-bottom shadow-sm">
   <h5 class="my-0 mr-md-2 font-weight-normal"><i class="fas fa-search-dollar"></i> Tatreding</h5>
-  <form class="form-inline mr-md-auto">
-    <nav class="my-2 my-md-0 mr-md-3 mr-md-auto">
-      <select id="symbol" class="custom-select w-auto"></select>
-      <input type="number" id="time" value="10" style="width: 5em" class="form-control d-inline" />
-      <select id="timeing" class="custom-select w-auto">
-        <option value="1m">1m</option>
-        <option value="3m">3m</option>
-        <option value="5m">5m</option>
-        <option value="15m">15m</option>
-        <option value="30m">30m</option>
-        <option value="1h">1h</option>
-        <option value="2h">2h</option>
-        <option value="4h">4h</option>
-        <option value="6h">6h</option>
-        <option value="8h">8h</option>
-        <option value="12h">12h</option>
-        <option value="1d">1d</option>
-        <option value="3d">3d</option>
-        <option value="1w">1w</option>
-        <option value="1M">1M</option>
-      </select>
-    </nav>
-  </form>
-  <a tabindex="0" style="display:none" id="globelNoStopLimit" data-trigger="hover" data-container="body" data-toggle="popover" data-placement="left" data-content="NO STOP"><i class="fas fa-exclamation-triangle text-danger"></i></a>
+  <nav class="my-2 my-md-0 mr-md-3 mr-md-auto">
+    <select id="symbol" class="custom-select w-auto"></select>
+    <input type="number" id="time" value="10" style="width: 5em" class="form-control d-inline" />
+    <select id="timeing" class="custom-select w-auto">
+      <option value="1m">1m</option>
+      <option value="3m">3m</option>
+      <option value="5m">5m</option>
+      <option value="15m">15m</option>
+      <option value="30m">30m</option>
+      <option value="1h">1h</option>
+      <option value="2h">2h</option>
+      <option value="4h">4h</option>
+      <option value="6h">6h</option>
+      <option value="8h">8h</option>
+      <option value="12h">12h</option>
+      <option value="1d">1d</option>
+      <option value="3d">3d</option>
+      <option value="1w">1w</option>
+      <option value="1M">1M</option>
+    </select>
+  </nav>
+  <%if (alarms.length > 0) { %>
+  <a tabindex="0" role="button" id="globelNoStopLimit" data-trigger="focus" data-container="body" data-toggle="popover" data-html="true" data-placement="left" data-content="<%
+    alarms.forEach(function(item){ if(item.asset != 'twt') {%><a href='/<%= item.asset %>/eur'><%= item.asset %></a>
+      <% }}) %>"><i class="fas fa-exclamation-triangle text-danger"></i></a>
+  <% } %>
 </div>

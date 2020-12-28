@@ -5,6 +5,7 @@ var client = new WebSocketClient();
 const BN_CONF = require('../config/binanceConstants');
 var logger = require('../config/winston');
 var axios = require('axios').default;
+var np = require('number-precision');
 const crypto = require('crypto');
 const qs = require('qs');
 
@@ -146,46 +147,87 @@ function addEventCallback(eventsCalback, ackCallback) {
 }
 
 binanceModule.getWallet = (callback) => {
-  getAutenticadCall(BN_CONF.API_WALLET_INFO, 'get', {}, callback);
+  autenticatedCall(BN_CONF.API_WALLET_INFO, 'get', {}, callback);
 }
 
 binanceModule.getAllOrder = (params, callback) => {
-  getAutenticadCall(BN_CONF.API_ALL_ORDER, 'get', params, callback);
+  autenticatedCall(BN_CONF.API_ALL_ORDER, 'get', params, callback);
+}
+
+binanceModule.getExchangeInfo = (callback) => {
+  unatenticatedCall(BN_CONF.API_EXCHANGE_INFO, 'get', {}, callback);
 }
 
 binanceModule.setSellStopLimit = (params, callback) => {
   params.side = 'SELL';
   params.type = 'STOP_LOSS_LIMIT';
 
-  getAutenticadCall(BN_CONF.API_ORDER, 'post', params, callback);
+  binanceModule.getExchangeInfo((response) => {
+    for (const item of response.data.symbols) {
+      if (item.symbol == params.symbol) {
+        params.quantity = np.round(params.quantity, item.baseAssetPrecision);
+        params.price = np.round(params.price, item.baseAssetPrecision);
+        params.stopPrice = np.round(params.stopPrice, item.baseAssetPrecision);
+
+        autenticatedCall(BN_CONF.API_ORDER, 'post', params, callback);
+        return;
+      }
+    }
+
+    logger.error('ExchangeInfo error');
+  });
 }
 
-function getAutenticadCall(url, method, params, callback) {
+binanceModule.getAllOpenOrder = (params, callback) => {
+  autenticatedCall(BN_CONF.API_ALL_OPEN_ORDER, 'get', params, callback);
+}
+
+function unatenticatedCall(url, method, params, callback) {
   testServerWeigth(() => {
-
-    params.timestamp = Date.now();
-    params.signature = getSignature(params);
-
     axios({
       method: method,
       url: url,
+      params: params
+    }).then(response => {
+      if (callback)
+        callback(response);
+      setServerWeigth(url, response);
+    }).catch(error => {
+      logger.error("UnatenticatedCall error: ", error);
+      callback(error);
+    });
+  });
+}
+
+function autenticatedCall(url, method, params, callback) {
+  testServerWeigth(() => {
+
+    params.timestamp = Date.now();
+    // params.recvWindow = 1000;
+    var queryStr = qs.stringify(params);
+    var siganture = getSignature(queryStr);
+
+    axios({
+      method: method,
+      url: url + '?' + queryStr + '&signature=' + siganture,
       headers: {
         "X-MBX-APIKEY": BN_CONF.API_APIKEY
-      },
-      params: params
+      }
+      // params: params
     }).then(response => {
       setServerWeigth(BN_CONF.API_ALL_ORDER, response);
       if (callback)
         callback(response);
     }).catch(error => {
-      logger.error("Get all order error: ", error);
+      logger.error("AutenticatedCall error: ", error);
+      callback(error);
     });
   });
 }
 
-function getSignature(params) {
+function getSignature(queryStr) {
   return crypto.createHmac("sha256", BN_CONF.API_SECRET_KEY)
-    .update(qs.stringify(params))
+    .update(queryStr)
     .digest("hex");
 }
 
@@ -202,30 +244,20 @@ binanceModule.getCandleHistory = (symbol, interval, startTime, endTime, callback
 }
 
 function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit) {
-  testServerWeigth(() => {
-    axios({
-      method: 'get',
-      url: BN_CONF.API_CANDLE_HISTORY,
-      params: {
-        interval: interval,
-        symbol: symbol,
-        startTime: startTime,
-        endTime: endTime,
-        limit: limit ? limit : 1000
-      }
-    }).then(response => {
-      callback(candleTransformer('history', response.data));
-      var startNewTime = response.data[response.data.length - 1][6];
-      if (startNewTime < endTime) {
-        getMultipleCandle(symbol, interval, startNewTime, endTime, callback, limit);
-      } else {
-        callback(null);
-      }
-
-      setServerWeigth(BN_CONF.API_CANDLE_HISTORY, response);
-    }).catch(error => {
-      logger.error("Get history error: ", error);
-    });
+  unatenticatedCall(BN_CONF.API_CANDLE_HISTORY, 'get', {
+    interval: interval,
+    symbol: symbol,
+    startTime: startTime,
+    endTime: endTime,
+    limit: limit ? limit : 1000
+  }, (response) => {
+    callback(candleTransformer('history', response.data));
+    var startNewTime = response.data[response.data.length - 1][6];
+    if (startNewTime < endTime) {
+      getMultipleCandle(symbol, interval, startNewTime, endTime, callback, limit);
+    } else {
+      callback(null);
+    }
   });
 }
 
@@ -280,13 +312,6 @@ binanceModule.timeEqualComparator = (type, obj1, obj2) => {
     case 'M':
       return obj1.date.getMonth() == obj2.date.getMonth();
   }
-}
-
-function tryReconnect(connection) {
-  logger.error("Binance socket not connected: ", connection);
-  logger.info("Try reconnect");
-
-
 }
 
 function candleTransformer(typeIn, input) {
