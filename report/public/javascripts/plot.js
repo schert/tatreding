@@ -196,6 +196,10 @@ $(document).ready(function() {
     .yAnnotation([rsiAnnotation, rsiAnnotationLeft])
     .verticalWireRange([0, dim.plot.height]);
 
+  var stopPrice = techan.plot.close()
+    .xScale(x)
+    .yScale(y);
+
   var svg = d3.select("#chartContainer").append("svg")
     .attr("width", dim.width)
     .attr("height", dim.height);
@@ -320,6 +324,9 @@ $(document).ready(function() {
     .attr("class", "supstances analysis")
     .attr("clip-path", "url(#ohlcClip)");
 
+  svg.append("g")
+    .attr("class", "stopPrice");
+
 
   // d3.csv("data.csv", function(error, data) {
   var data = [];
@@ -340,7 +347,8 @@ $(document).ready(function() {
         high: +d.high,
         low: +d.low,
         close: +d.close,
-        volume: +d.volume
+        volume: +d.volume,
+        stopPrice : +d.stopPrice
       };
     });
 
@@ -365,7 +373,14 @@ $(document).ready(function() {
       return d3.ascending(accessor.d(a), accessor.d(b));
     });
 
-    realtimeUpdate(data[data.length-1]);
+    var dataStop = data.map(function(d) {
+      return {
+        date: d.date,
+        close: +d.stopPrice
+      };
+    });
+
+    realtimeUpdate(data[data.length - 1]);
 
     x.domain(techan.scale.plot.time(data).domain());
     y.domain(techan.scale.plot.ohlc(data.slice(indicatorPreRoll)).domain());
@@ -410,7 +425,7 @@ $(document).ready(function() {
 
     var supstanceData = [];
     $.each(orders, function(k, v) {
-      if (v.symbolFrom+v.symbolTo == symbol) {
+      if (v.symbolFrom + v.symbolTo == symbol) {
         supstanceData.push({
           start: parseDate(v.time),
           end: data[data.length - 1].date,
@@ -438,6 +453,7 @@ $(document).ready(function() {
     svg.select("g.crosshair.rsi").call(rsiCrosshair).call(zoom);
     // svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
     svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
+    svg.select("g.stopPrice").datum(dataStop).call(stopPrice);
 
     // svg.select("g.tradearrow").datum(trades).call(tradearrow);
 
@@ -446,9 +462,9 @@ $(document).ready(function() {
     yInit = y.copy();
     yPercentInit = yPercent.copy();
 
-    if(previousDomanin.x)
+    if (previousDomanin.x)
       resetZoom();
-      
+
     draw();
   });
 
@@ -461,6 +477,7 @@ $(document).ready(function() {
   }
 
   var previousDomanin = {};
+
   function zoomed() {
     x.zoomable().domain(previousDomanin.x = d3.event.transform.rescaleX(zoomableInit).domain());
     y.domain(previousDomanin.y = d3.event.transform.rescaleY(yInit).domain());
@@ -494,5 +511,6 @@ $(document).ready(function() {
     svg.select("g.trendlines").call(trendline.refresh);
     svg.select("g.supstances").call(supstance.refresh);
     svg.select("g.tradearrow").call(tradearrow.refresh);
+    svg.select("g.stopPrice").call(stopPrice.refresh);
   }
 });

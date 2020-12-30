@@ -43,6 +43,12 @@ path.volume {
   fill: #DDDDDD;
 }
 
+path.line {
+  fill: none;
+  stroke: #000000;
+  stroke-width: 1;
+}
+
 .indicator-plot path.line {
   fill: none;
   stroke-width: 1;

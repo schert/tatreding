@@ -33,7 +33,7 @@ module.exports = function(io) {
         var alarms = [];
         response[0].forEach((item, i) => {
           if (item.free > 0 || item.locked > 0) {
-            var filter = bRes.data.filter(value => "/^"+item.asset+"/i".test(value.symbol));
+            var filter = bRes.data.filter(value => "/^" + item.asset + "/i".test(value.symbol));
             if (filter.length == 0 && item.asset != 'EUR') {
               alarms.push(item);
             }
@@ -53,7 +53,12 @@ module.exports = function(io) {
         });
 
         binanceModule.getCandleHistory((symbolFrom + symbolTo).toUpperCase(), timing, +startTime, +endTime, (history) => {
-          historyStore = history;
+          var historyStore = history;
+
+          historyStore.forEach((item, i) => {
+            item.stopPrice = stopPriceCalc(historyStore.slice(0, i+1));
+          });
+
 
           io.emit('chartData', {
             realtime: false,
@@ -83,6 +88,7 @@ module.exports = function(io) {
                 }
 
                 historyStore.push(message);
+                message.stopPrice = stopPriceCalc(historyStore);
                 io.emit('chartData', {
                   update: update,
                   data: [message],
@@ -98,6 +104,54 @@ module.exports = function(io) {
     });
   });
 
+  function stopPriceCalc(historyStore, fixRisk) {
+
+    var spreadMax, spreadMin;
+    spreadMax = spreadMin = parseFloat(historyStore[0].high) - parseFloat(historyStore[0].low);
+
+    historyStore.forEach((item, i) => {
+      var spread = parseFloat(item.high) - parseFloat(item.low);
+      if(spreadMax < spread)
+        spreadMax = spread;
+
+      if(spreadMin > spread)
+        spreadMin = spread;
+    });
+
+    var stopPrice = -1;
+    var spreadRefer = spreadMax - spreadMin;
+
+    function applyAlgo(stopPrice, sample, q) {
+      return (stopPrice * (1 - q)) + (sample * q);
+    }
+
+    historyStore.forEach((item, i) => {
+      var open = parseFloat(item.open);
+      var low = parseFloat(item.low);
+      var high = parseFloat(item.high);
+
+      if(stopPrice == -1)
+        stopPrice = open;
+
+      var spread = high - low;
+      // var close = parseFloat(item.close) - spreadMax;
+      // var open = parseFloat(item.open) - spreadMax;
+
+      var q = 0.1;
+      var close = parseFloat(item.close);
+      var val = close;
+
+      if(open > close) {
+        q = ((spread - spreadMin) / (spreadMax - spreadMin)) * 0.9;
+        val = high - (spread/2);
+      }
+
+      stopPrice = applyAlgo(stopPrice, val, q);
+    });
+
+    return stopPrice;
+  }
+
   router.post('/order', (req, res, next) => {
     binanceModule.setSellStopLimit({
       timeInForce: 'GTC',
@@ -106,7 +160,7 @@ module.exports = function(io) {
       price: parseFloat(req.body.limitPrice),
       stopPrice: parseFloat(req.body.stopPrice)
     }, (response) => {
-      if(response.response.data.code !=0) {
+      if (response.response.data.code != 0) {
         res.json(response.response.data, 400);
       } else {
         res.json(response.data);
