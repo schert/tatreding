@@ -1,7 +1,5 @@
 var binanceModule = {};
 
-var WebSocketClient = require('websocket').client;
-var client = new WebSocketClient();
 const BN_CONF = require('../config/binanceConstants');
 var logger = require('../config/winston');
 var axios = require('axios').default;
@@ -14,108 +12,112 @@ var eventCallbackMap = new Map();
 var weightServer = new Map();
 var lastHTTPCode = 0;
 
-client.on('connectFailed', function(error) {
-  binanceModule.reciveCallback = null;
-  binanceModule.afterConnect = null;
-  logger.error('Connect Error: ' + error.toString());
-});
-
-client.on('connect', function(connection) {
-  binanceModule.connection = connection;
-
-  logger.info('WebSocket Client Connected');
-
-  connection.on('error', function(error) {
-    logger.error("Connection Error: " + error.toString());
+function registerClient(client) {
+  client.on('connectFailed', function(error) {
+    binanceModule.reciveCallback = null;
+    binanceModule.afterConnect = null;
+    logger.error('Connect Error: ' + error.toString());
   });
 
-  connection.on('close', function() {
-    logger.info('Connection Closed');
-  });
+  client.on('connect', function(connection) {
+    binanceModule.connection = connection;
 
-  connection.on('message', function(message) {
-    if (message.type === 'utf8') {
+    logger.info('WebSocket Client Connected');
 
-      var json = JSON.parse(message.utf8Data)
+    connection.on('error', function(error) {
+      logger.error("Connection Error: " + error.toString());
+    });
 
-      if (json.error) {
-        logger.error("Binance error: ", json.error);
-        return;
-      }
+    connection.on('close', function() {
+      binanceModule.connection = null;
+      logger.info('Connection Closed');
+    });
 
-      if (json.id !== undefined) {
-        if (ackCallbackMap.has(json.id)) {
-          ackCallbackMap.get(json.id)(json);
+    connection.on('message', function(message) {
+      if (message.type === 'utf8') {
+
+        var json = JSON.parse(message.utf8Data)
+
+        if (json.error) {
+          logger.error("Binance error: ", json.error);
+          return;
         }
-      } else {
-        eventCallbackMap.get(json.e)(json);
-      }
-    }
-  });
 
-  binanceModule.unsubscribe = function(param) {
-    if (connection.connected) {
-      var obj = {
-        "method": "UNSUBSCRIBE",
-        "params": param,
-        "id": addEventCallback()
-      }
-      connection.sendUTF(JSON.stringify(obj));
-    }
-
-    return obj.id;
-  }
-
-  binanceModule.unsubscribeAll = function(callback) {
-
-    if (connection.connected) {
-      var obj = {
-        "method": "LIST_SUBSCRIPTIONS",
-        "id": addAckCallback(function(message) {
-          binanceModule.unsubscribe(message.result);
-
-          if (callback)
-            callback();
-        })
-      }
-
-      connection.sendUTF(JSON.stringify(obj));
-      return obj.id;
-    }
-
-    return obj.id;
-  }
-
-  binanceModule.subscribe = function(param) {
-    if (connection.connected) {
-      var events = param.map(function(d) {
-        return {
-          name: d.split('@')[1].split('_')[0],
-          fn: function(message) {
-            binanceModule.reciveCallback(message);
+        if (json.id !== undefined) {
+          if (ackCallbackMap.has(json.id)) {
+            ackCallbackMap.get(json.id)(json);
           }
+        } else {
+          eventCallbackMap.get(json.e)(json);
         }
-      });
-
-      var obj = {
-        "method": "SUBSCRIBE",
-        "params": param,
-        "id": addEventCallback(events)
       }
-      connection.sendUTF(JSON.stringify(obj));
+    });
+
+    binanceModule.unsubscribe = function(param) {
+      if (connection.connected) {
+        var obj = {
+          "method": "UNSUBSCRIBE",
+          "params": param,
+          "id": addEventCallback()
+        }
+        connection.sendUTF(JSON.stringify(obj));
+      }
 
       return obj.id;
     }
-  }
 
-  binanceModule.afterConnect();
-});
+    binanceModule.unsubscribeAll = function(callback) {
 
-binanceModule.connect = function(afterConnect, reciveCallback) {
+      if (connection.connected) {
+        var obj = {
+          "method": "LIST_SUBSCRIPTIONS",
+          "id": addAckCallback(function(message) {
+            binanceModule.unsubscribe(message.result);
+
+            if (callback)
+              callback();
+          })
+        }
+
+        connection.sendUTF(JSON.stringify(obj));
+        return obj.id;
+      }
+
+      return obj.id;
+    }
+
+    binanceModule.subscribe = function(param) {
+      if (connection.connected) {
+        var events = param.map(function(d) {
+          return {
+            name: d.split('@')[1].split('_')[0],
+            fn: function(message) {
+              binanceModule.reciveCallback(message);
+            }
+          }
+        });
+
+        var obj = {
+          "method": "SUBSCRIBE",
+          "params": param,
+          "id": addEventCallback(events)
+        }
+        connection.sendUTF(JSON.stringify(obj));
+
+        return obj.id;
+      }
+    }
+
+    binanceModule.afterConnect();
+  });
+}
+
+binanceModule.connect = function(webSocketClient, afterConnect, reciveCallback) {
   if (!binanceModule.afterConnect) {
+    registerClient(webSocketClient);
     binanceModule.reciveCallback = reciveCallback;
     binanceModule.afterConnect = afterConnect;
-    return client.connect(BN_CONF.WS_URL + (+new Date()));
+    return webSocketClient.connect(BN_CONF.WS_URL + (+new Date()));
   } else {
     binanceModule.reciveCallback = reciveCallback;
     binanceModule.afterConnect = afterConnect;
@@ -165,6 +167,11 @@ binanceModule.setSellStopLimit = (params, callback) => {
   binanceModule.getExchangeInfo((response) => {
     for (const item of response.data.symbols) {
       if (item.symbol == params.symbol) {
+        var tick = item.filters[0].tickSize;
+
+        params.price = (np.round(params.price/ tick, 0)) * tick;
+        params.stopPrice = (np.round(params.stopPrice/ tick, 0)) * tick;
+
         params.quantity = np.round(params.quantity, item.baseAssetPrecision);
         params.price = np.round(params.price, item.baseAssetPrecision);
         params.stopPrice = np.round(params.stopPrice, item.baseAssetPrecision);
@@ -193,8 +200,8 @@ function unatenticatedCall(url, method, params, callback) {
         callback(response);
       setServerWeigth(url, response);
     }).catch(error => {
-      logger.error("UnatenticatedCall error: ", error);
-      callback(error);
+      logger.error("UnatenticatedCall error: ", error.response);
+      callback(error.response);
     });
   });
 }
@@ -219,8 +226,8 @@ function autenticatedCall(url, method, params, callback) {
       if (callback)
         callback(response);
     }).catch(error => {
-      logger.error("AutenticatedCall error: ", error);
-      callback(error);
+      logger.error("AutenticatedCall error: ", error.response);
+      callback(error.response);
     });
   });
 }

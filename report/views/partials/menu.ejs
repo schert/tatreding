@@ -23,7 +23,7 @@
   </nav>
   <%if (alarms.length > 0) { %>
   <a tabindex="0" role="button" id="globelNoStopLimit" data-trigger="focus" data-container="body" data-toggle="popover" data-html="true" data-placement="left" data-content="<%
-    alarms.forEach(function(item){ if(item.asset != 'twt') {%><a href='/<%= item.asset %>/eur'><%= item.asset %></a>
+    alarms.forEach(function(item){ if(item.asset != 'twt') {%><a href='/<%= item.asset %>/eur/<%= url.split('/').slice(3,5).join('/'); %>'><%= item.asset %></a>
       <% }}) %>"><i class="fas fa-exclamation-triangle text-danger"></i></a>
   <% } %>
 </div>
