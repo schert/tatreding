@@ -25,6 +25,7 @@ utils.stopPriceCalc = (historyStore, fixRisk) => {
     var open = parseFloat(item.open);
     var low = parseFloat(item.low);
     var high = parseFloat(item.high);
+    var close = parseFloat(item.close);
 
     if (stopPrice == -1)
       stopPrice = open;
@@ -33,13 +34,10 @@ utils.stopPriceCalc = (historyStore, fixRisk) => {
     // var close = parseFloat(item.close) - spreadMax;
     // var open = parseFloat(item.open) - spreadMax;
 
-    var q = 0.3 + ((spread - spreadMin) / (spreadMax - spreadMin)) * 0.3;
-    var close = parseFloat(item.close);
-    var val = close - (spread/2);
-
+    var q = 0.005 + ((spread - spreadMin) / (spreadMax - spreadMin)) * 0.3;
+    var val = low;
     if (open > close) {
-      q = (spread - spreadMin) / (spreadMax - spreadMin);
-      val = open;
+      q = 0.8 * ((spread - spreadMin) / (spreadMax - spreadMin));
     }
 
     stopPrice = applyAlgo(stopPrice, val, q);

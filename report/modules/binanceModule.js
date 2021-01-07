@@ -12,6 +12,10 @@ var eventCallbackMap = new Map();
 var weightServer = new Map();
 var lastHTTPCode = 0;
 
+binanceModule.setConfigLogger = (config) => {
+  logger = config;
+}
+
 function registerClient(client) {
   client.on('connectFailed', function(error) {
     binanceModule.reciveCallback = null;
@@ -160,6 +164,10 @@ binanceModule.getExchangeInfo = (callback) => {
   unatenticatedCall(BN_CONF.API_EXCHANGE_INFO, 'get', {}, callback);
 }
 
+binanceModule.cancelOrder = (params, callback) => {
+  autenticatedCall(BN_CONF.API_ORDER, 'delete', params, callback);
+}
+
 binanceModule.setSellStopLimit = (params, callback) => {
   params.side = 'SELL';
   params.type = 'STOP_LOSS_LIMIT';
@@ -168,7 +176,11 @@ binanceModule.setSellStopLimit = (params, callback) => {
     for (const item of response.data.symbols) {
       if (item.symbol == params.symbol) {
         var tick = item.filters[0].tickSize;
+        var step = item.filters[2].stepSize;
 
+        np.enableBoundaryChecking(false);
+
+        params.quantity = Math.floor(params.quantity/ step) * step;
         params.price = (np.round(params.price/ tick, 0)) * tick;
         params.stopPrice = (np.round(params.stopPrice/ tick, 0)) * tick;
 
@@ -200,8 +212,10 @@ function unatenticatedCall(url, method, params, callback) {
         callback(response);
       setServerWeigth(url, response);
     }).catch(error => {
-      logger.error("UnatenticatedCall error: ", error.response);
-      callback(error.response);
+      setServerWeigth(url, error.response);
+      error = error.response ? {status: error.response.status, data : error.response.data} : error;
+      logger.error("UnatenticatedCall error: ", error);
+      callback(error);
     });
   });
 }
@@ -209,26 +223,38 @@ function unatenticatedCall(url, method, params, callback) {
 function autenticatedCall(url, method, params, callback) {
   testServerWeigth(() => {
 
-    params.timestamp = Date.now();
-    // params.recvWindow = 1000;
-    var queryStr = qs.stringify(params);
-    var siganture = getSignature(queryStr);
+    syncBinanceTime((time) => {
+      var delta = Date.now() - time;
 
-    axios({
-      method: method,
-      url: url + '?' + queryStr + '&signature=' + siganture,
-      headers: {
-        "X-MBX-APIKEY": BN_CONF.API_APIKEY
-      }
-      // params: params
-    }).then(response => {
-      setServerWeigth(BN_CONF.API_ALL_ORDER, response);
-      if (callback)
-        callback(response);
-    }).catch(error => {
-      logger.error("AutenticatedCall error: ", error.response);
-      callback(error.response);
+      params.timestamp = Date.now() - delta;
+      // params.recvWindow = 5000;
+      var queryStr = qs.stringify(params);
+      var siganture = getSignature(queryStr);
+
+      axios({
+        method: method,
+        url: url + '?' + queryStr + '&signature=' + siganture,
+        headers: {
+          "X-MBX-APIKEY": BN_CONF.API_APIKEY
+        }
+      }).then(response => {
+        setServerWeigth(BN_CONF.API_ALL_ORDER, response);
+        if (callback)
+          callback(response);
+      }).catch(error => {
+        setServerWeigth(url, error.response);
+        error = error.response ? {status: error.response.status, data : error.response.data} : error;
+        logger.error("AutenticatedCall error: ", error);
+        callback(error);
+      });
     });
+  });
+}
+
+function syncBinanceTime(callbackSync) {
+  unatenticatedCall(BN_CONF.API_TIME, 'get', {}, (res) => {
+    if(res.status == 200)
+      callbackSync(res.data.serverTime);
   });
 }
 
@@ -270,13 +296,17 @@ function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit
 
 function setServerWeigth(url, response) {
   var headerf = [];
+  lastHTTPCode = response.status;
+
+  if(!response.headers)
+    return;
+
   Object.keys(response.headers).forEach((item, i) => {
     if (item.startsWith('x-mbx-')) {
       headerf[item] = response.headers[item];
     }
   });
 
-  lastHTTPCode = response.status;
   weightServer.set(url, headerf);
 }
 

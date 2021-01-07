@@ -5,7 +5,6 @@ var constant = {
 
 module.exports = Object.freeze({
   WS_URL : 'wss://stream.binance.com:9443/ws/tatreding',
-  API_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/klines',
   API_CANDLE_HISTORY : constant.BASE_API_URL+'/api/'+constant.VERSION+'/klines',
   API_ALL_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/allOrders',
   API_APIKEY : 'mvwJsV0mKpWGj4oW9dRv7UR05f8iXbOjxfcCaFBkmBKd4tNwVR1WKlhUUd0I2jN8',
@@ -13,5 +12,6 @@ module.exports = Object.freeze({
   API_EXCHANGE_INFO : constant.BASE_API_URL+'/api/'+constant.VERSION+'/exchangeInfo',
   API_WALLET_INFO : constant.BASE_API_URL+'/api/'+constant.VERSION+'/account',
   API_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/order',
-  API_ALL_OPEN_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/openOrders'
+  API_ALL_OPEN_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/openOrders',
+  API_TIME : constant.BASE_API_URL+'/api/'+constant.VERSION+'/time'
 });

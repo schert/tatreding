@@ -83,10 +83,6 @@ $(document).ready(function() {
     .xScale(x)
     .yScale(y);
 
-  var supstance = techan.plot.supstance()
-    .xScale(x)
-    .yScale(y);
-
   var xAxis = d3.axisBottom(x);
 
   var timeAnnotation = techan.plot.axisannotation()
@@ -117,6 +113,11 @@ $(document).ready(function() {
   var percentAnnotation = techan.plot.axisannotation()
     .axis(percentAxis)
     .orient('left');
+
+  var supstance = techan.plot.supstance()
+    .xScale(x)
+    .yScale(y)
+    .annotation([ohlcAnnotation, percentAnnotation]);
 
   var volumeAxis = d3.axisRight(yVolume)
     .ticks(3)
@@ -208,6 +209,14 @@ $(document).ready(function() {
 
   defs.append("clipPath")
     .attr("id", "ohlcClip")
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", dim.plot.width)
+    .attr("height", dim.ohlc.height);
+
+  defs.append("clipPath")
+    .attr("id", "supstanceClip")
     .append("rect")
     .attr("x", 0)
     .attr("y", 0)
@@ -320,12 +329,16 @@ $(document).ready(function() {
   svg.append("g")
     .attr("class", "trendlines analysis")
     .attr("clip-path", "url(#ohlcClip)");
-  svg.append("g")
-    .attr("class", "supstances analysis")
-    .attr("clip-path", "url(#ohlcClip)");
 
   svg.append("g")
-    .attr("class", "stopPrice");
+    .attr("class", "supstances analysis");
+
+  svg.append("g")
+    .attr("class", "supstancesBuy analysis");
+
+  svg.append("g")
+    .attr("class", "stopPrice")
+    .attr("clip-path", "url(#ohlcClip)");
 
 
   // d3.csv("data.csv", function(error, data) {
@@ -348,7 +361,7 @@ $(document).ready(function() {
         low: +d.low,
         close: +d.close,
         volume: +d.volume,
-        stopPrice : +d.stopPrice
+        stopPrice: +d.stopPrice
       };
     });
 
@@ -424,13 +437,20 @@ $(document).ready(function() {
     // ];
 
     var supstanceData = [];
+    var buyData = [];
     $.each(orders, function(k, v) {
-      if (v.symbolFrom + v.symbolTo == symbol) {
+      if (v.side == 'SELL' && v.symbolFrom + v.symbolTo == symbol) {
         supstanceData.push({
           start: parseDate(v.time),
           end: data[data.length - 1].date,
           value: v.price
         });
+      } else if (v.side == 'BUY') {
+        buyData.push({
+          start: parseDate(v.time),
+          end: data[data.length - 1].date,
+          value: v.price
+        })
       }
     });
 
@@ -453,6 +473,7 @@ $(document).ready(function() {
     svg.select("g.crosshair.rsi").call(rsiCrosshair).call(zoom);
     // svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
     svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
+    svg.select("g.supstancesBuy").datum(buyData).call(supstance).call(supstance.drag);
     svg.select("g.stopPrice").datum(dataStop).call(stopPrice);
 
     // svg.select("g.tradearrow").datum(trades).call(tradearrow);

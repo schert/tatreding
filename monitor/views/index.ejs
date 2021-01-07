@@ -7,9 +7,12 @@
 
 <body>
   <% include partials/menu %>
-  <div class="container-fluid bg-3 text-center">
+  <div class="container-fluid bg-3 text-left">
     <div class="d-flex justify-content-between">
-      <div>Monitor status: <%= status %></div>
+      <div>
+        <p>Monitor status: <%= status %></p>
+        <p>Last message: <span id="message"></span></p>
+      </div>
     </div>
   </div>
 </body>

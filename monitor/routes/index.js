@@ -1,12 +1,14 @@
-module.exports = () => {
+module.exports = (io) => {
   var express = require('express');
   var router = express.Router();
-  var logger = require('../config/winston');
-  var binanceModule = require('../../report/modules/binanceModule');
   var mysqlConnection = require('../../report/modules/mysql');
   var analytics = require('../modules/analytics.js');
   var WebSocketClient = require('websocket').client;
   var client = new WebSocketClient();
+  var logger = require('../config/winston')(io);
+  var binanceModule = require('../../report/modules/binanceModule');
+  binanceModule.setConfigLogger(logger);
+  var intervalMonitor = false;
 
   /* GET home page. */
   router.get('/startStopLossMonitoring', (req, res, next) => {
@@ -18,18 +20,49 @@ module.exports = () => {
     var endTime = new Date(startTime);
     startTime.setHours(startTime.getHours() - wind);
 
+    monitorStopPrice(startTime, endTime, timing);
+    clearInterval(intervalMonitor);
+    intervalMonitor = setInterval(function() {
+      monitorStopPrice(startTime, endTime, timing);
+    }, 1000*60);
+
+    res.render('index', {
+      page: 'Home',
+      menuId: 'home',
+      status: 'Monitoring ON',
+      baseUrl: req.headers.host
+    });
+  });
+
+  router.get('/stopStopLossMonitoring', (req, res, next) => {
+    binanceModule.unsubscribeAll(() => {
+      res.render('index', {
+        page: 'Home',
+        menuId: 'home',
+        status: 'Monitoring OFF',
+        baseUrl: req.headers.host
+      });
+    });
+    clearInterval(intervalMonitor);
+    intervalMonitor = false;
+  });
+
+  function monitorStopPrice(startTime, endTime, timing) {
     binanceModule.getAllOpenOrder({}, (bRes) => {
 
-      if(bRes.data.length == 0) {
-        res.render('index', {
-          page: 'Home',
-          menuId: 'home',
-          status: 'no stop loss limit orders!',
-          baseUrl: req.headers.host
-        });
+      if (bRes.status != 200) {
+        sendStatus({code : -1, msg : 'Get all Order Error', obj : bRes.data});
         return;
       }
 
+      if (bRes.data.length == 0) {
+        sendStatus({code : -1, msg : 'No orders', obj : bRes.data});
+        return;
+      }
+
+      clearInterval(intervalMonitor);
+      intervalMonitor = false;
+      sendStatus({code : 0, msg : 'Starting...'});
       var params = [];
       var historyStore = {};
       bRes.data.forEach((item, i) => {
@@ -41,50 +74,97 @@ module.exports = () => {
           });
         });
 
-        params.push(item.symbol + '@kline_' + timing);
+        params.push(item.symbol.toLowerCase() + '@kline_' + timing);
       });
 
-      if (!binanceModule.connection) {
-        binanceModule.connect(client, () => {
-          binanceModule.unsubscribeAll(() => {
-            binanceModule.subscribe(params);
-          });
-        }, (raw) => {
-          switch (raw.e) {
-            case 'kline':
-              var message = binanceModule.candleTransformer('stream', raw);
-              var obj = historyStore.pop();
-
-              if (obj) {
-                if (!binanceModule.timeEqualComparator(timing, obj, message)) {
-                  historyStore.push(obj);
-                  historyStore.shift();
-                }
-              }
-
-              message.stopPrice = analytics.stopPriceCalc(historyStore);
-              historyStore.push(message);
-              break;
-          }
+      binanceModule.connect(client, () => {
+        binanceModule.unsubscribeAll(() => {
+          binanceModule.subscribe(params);
         });
-      }
+      }, (raw) => {
+        switch (raw.e) {
+          case 'kline':
+            if (!historyStore[raw.s])
+              return;
 
-      res.render('index', {
-        page: 'Home',
-        menuId: 'home',
-        status: 'bhu',
-        baseUrl: req.headers.host
-      });
+            sendStatus({code : 0, msg : 'Running...'});
+
+            var message = binanceModule.candleTransformer('stream', raw);
+            var obj = historyStore[raw.s].pop();
+
+            if (obj) {
+              if (!binanceModule.timeEqualComparator(timing, obj, message)) {
+                historyStore[raw.s].push(obj);
+                historyStore[raw.s].shift();
+
+                binanceModule.getAllOpenOrder({symbol : raw.s}, (bRes) => {
+                  var orders = [];
+                  if(bRes.data.length != 0) {
+                    bRes.data.forEach((item, i) => {
+                      if (!orders[item.symbol])
+                        orders[item.symbol] = [];
+                      orders[item.symbol].push(item);
+                    });
+
+                    setNewStopPrice(raw.s, obj.stopPrice, obj, orders[raw.s]);
+                  } else {
+                    binanceModule.unsubscribe([raw.s.toLowerCase() + '@kline_' + timing]);
+                  }
+                });
+              }
+            }
+
+            message.stopPrice = analytics.stopPriceCalc(historyStore[raw.s]);
+            historyStore[raw.s].push(message);
+            break;
+        }
+      }, logger);
     });
-  });
+  }
 
-  router.get('/stopStopLossMonitoring', (req, res, next) => {
-    binanceModule.unsubscribeAll(() => {
-      res.render('index', {
-        status: 'stopped'
-      });
-    })
-  });
+  function sendStatus(msg) {
+    io.emit('statusMessage', msg);
+  }
+
+  function setNewStopPrice(symbol, stopPrice, lastCandle, orders) {
+
+    orders.forEach((item, i) => {
+      if (item.type == 'STOP_LOSS_LIMIT') {
+        binanceModule.cancelOrder({
+          symbol: symbol,
+          orderId: item.orderId
+        }, (responseSL) => {
+          if (responseSL.status != 200) {
+            sendStatus({code : -1, msg : 'Order ID error', obj : responseSL.data});
+            return;
+          }
+
+          var spread = lastCandle.high - lastCandle.low;
+
+          binanceModule.setSellStopLimit({
+            timeInForce: 'GTC',
+            symbol: symbol,
+            quantity: parseFloat(item.origQty),
+            price: parseFloat(stopPrice - (spread/2)),
+            stopPrice: parseFloat(stopPrice)
+          }, (response) => {
+            if (response.status != 200) {
+              sendStatus({code : -1, msg : 'Set Stop Limit error', obj : response.data});
+            } else {
+              var stopInv = {
+                symbol: symbol,
+                quantity: parseFloat(item.origQty),
+                price: parseFloat(stopPrice - (spread/2)),
+                stopPrice: parseFloat(stopPrice)
+              }
+              logger.info('inviato: ', stopInv);
+              sendStatus({code : 1, msg : 'Stop Limit setted', obj : stopInv});
+            }
+          });
+        })
+      }
+    });
+  }
 
   function updateWallet(callback) {
     binanceModule.getWallet((response) => {

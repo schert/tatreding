@@ -1,4 +1,4 @@
-module.exports = function(io) {
+module.exports = (io) => {
   var express = require('express');
   var router = express.Router();
   var logger = require('../config/winston');
@@ -35,7 +35,7 @@ module.exports = function(io) {
         var alarms = [];
         response[0].forEach((item, i) => {
           if (item.free > 0 || item.locked > 0) {
-            var filter = bRes.data.filter(value => new RegExp("/^" + item.asset + "/i").test(value.symbol));
+            var filter = bRes.data.filter(value => new RegExp("^" + item.asset, "i").test(value.symbol));
             if (filter.length == 0 && item.asset != 'EUR') {
               alarms.push(item);
             }

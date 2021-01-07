@@ -32,7 +32,7 @@ path.candle.down {
 .annotation text {
   fill: white;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 8px;
 }
 
 .closed.annotation.up path {
@@ -160,8 +160,29 @@ path.middle, path.zero {
   stroke-dasharray: 1, 1;
 }
 
-.crosshair .axisannotation path {
-  fill: #DDDDDD;
+.axisannotation path {
+  fill: blue;
+}
+
+.axisannotation text {
+  fill: #fff;
+  font-size: 8px;
+}
+
+.supstances .axisannotation path {
+  opacity: 0.6;
+}
+
+.supstances path {
+  stroke: red;
+}
+
+.supstancesBuy path {
+  stroke: green;
+}
+
+.supstancesBuy .axisannotation path {
+  opacity: 0.6;
 }
 
 .tradearrow path.tradearrow {
