@@ -4,12 +4,12 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 var socket_io = require('socket.io');
-var winston = require('./config/winston');
 
 var app = express();
 
 // Socket.io
 var indexRouter = require('./routes/index')(app.io = socket_io());
+var winston = require('./config/winston')(app.io);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

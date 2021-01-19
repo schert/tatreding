@@ -169,11 +169,11 @@ path.middle, path.zero {
   font-size: 8px;
 }
 
-.supstances .axisannotation path {
-  opacity: 0.6;
+.supstancesSell path {
+  opacity: 0.2;
 }
 
-.supstances path {
+.supstancesSell path {
   stroke: red;
 }
 
@@ -181,8 +181,22 @@ path.middle, path.zero {
   stroke: green;
 }
 
-.supstancesBuy .axisannotation path {
-  opacity: 0.6;
+.supstancesBuy path {
+  opacity: 0.2;
+}
+
+.lastSupstancesBuy path {
+  opacity: 1;
+  stroke: green;
+}
+
+.lastSupstancesSell path {
+  opacity: 1;
+  stroke: red;
+}
+
+.stopPriceLongTerm path{
+  stroke: green;
 }
 
 .tradearrow path.tradearrow {

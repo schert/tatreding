@@ -11,7 +11,8 @@
     <div class="d-flex justify-content-between">
       <div id="chartContainer" style="width:80%"></div>
       <form id="lateralMenu">
-        <div id="wallet" class="mb-2 text-left"><span class="text-uppercase assetTo"></span>: <span class="assetToValue font-weight-bold"></span><br><span class="text-uppercase asset"></span>: <a id="totalAsset" href=""><span class="assetValue"></span></a></div>
+        <div id="wallet" class="mb-2 text-left"><span class="text-uppercase assetTo"></span>: <span class="assetToValue font-weight-bold"></span><br><span class="text-uppercase asset"></span>: <a id="totalAsset" href=""><span
+              class="assetValue"></span></a></div>
         <label class="sr-only" for="assetAmount">Amount&nbsp;<span class="asset"></span></label>
         <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
@@ -55,11 +56,23 @@
           <input class="form-control" type="number" min="0" id="stopPer" name="stopPer" value="10" step="0.001">
         </div>
         <label class="sr-only" for="stopPrice">Stop Price</label>
-        <div class="input-group mb-4 mr-sm-2">
+        <div class="input-group mb-2 mr-sm-2">
           <div class="input-group-prepend">
             <div class="input-group-text bg-warning">Stop Price</div>
           </div>
           <input class="form-control" type="number" min="0" id="stopPrice" name="stopPrice" value="0" step="0.001">
+        </div>
+        <div class="form-check form-check-inline mb-3 mr-sm-2">
+          <input type="radio" id="longTerm" name="type" class="form-check-input" value="longTerm">
+          <label class="form-check-label" for="longTerm">Long term</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input type="radio" id="treding" name="type" class="form-check-input" value="treding">
+          <label class="form-check-label" for="treding">Treding</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input type="radio" id="noMon" name="type" class="form-check-input" value="noMonitor" checked>
+          <label class="form-check-label" for="noMon">No Monitoring</label>
         </div>
         <button id="setStopButton" type="button" class="btn btn-danger mb-2">STOP LIMIT (SELL)</button>
         <div id="noStopLimit" class="display-1" style="display:none"><i class="fas fa-exclamation-triangle text-danger"></i></div>

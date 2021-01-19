@@ -175,7 +175,8 @@ $(document).ready(function() {
           symbol: (asset+assetTo).toUpperCase(),
           quantity: assetAmountVal,
           limitPrice: limitPriceVal,
-          stopPrice: stopPriceVal
+          stopPrice: stopPriceVal,
+          type : $("input[name='type']:checked").val()
         }, function(data) {
           Swal.fire(
             'SETTED!',

@@ -119,6 +119,14 @@ $(document).ready(function() {
     .yScale(y)
     .annotation([ohlcAnnotation, percentAnnotation]);
 
+  var stopPriceTreding = techan.plot.close()
+    .xScale(x)
+    .yScale(y);
+
+  var stopPriceLongTerm = techan.plot.close()
+    .xScale(x)
+    .yScale(y);
+
   var volumeAxis = d3.axisRight(yVolume)
     .ticks(3)
     .tickFormat(d3.format(",.3s"));
@@ -196,10 +204,6 @@ $(document).ready(function() {
     .xAnnotation(timeAnnotation)
     .yAnnotation([rsiAnnotation, rsiAnnotationLeft])
     .verticalWireRange([0, dim.plot.height]);
-
-  var stopPrice = techan.plot.close()
-    .xScale(x)
-    .yScale(y);
 
   var svg = d3.select("#chartContainer").append("svg")
     .attr("width", dim.width)
@@ -331,13 +335,23 @@ $(document).ready(function() {
     .attr("clip-path", "url(#ohlcClip)");
 
   svg.append("g")
-    .attr("class", "supstances analysis");
-
-  svg.append("g")
     .attr("class", "supstancesBuy analysis");
 
   svg.append("g")
-    .attr("class", "stopPrice")
+    .attr("class", "supstancesSell analysis");
+
+  svg.append("g")
+    .attr("class", "lastSupstancesBuy analysis");
+
+  svg.append("g")
+    .attr("class", "lastSupstancesSell analysis");
+
+  svg.append("g")
+    .attr("class", "stopPriceTreding")
+    .attr("clip-path", "url(#ohlcClip)");
+
+  svg.append("g")
+    .attr("class", "stopPriceLongTerm")
     .attr("clip-path", "url(#ohlcClip)");
 
 
@@ -361,7 +375,7 @@ $(document).ready(function() {
         low: +d.low,
         close: +d.close,
         volume: +d.volume,
-        stopPrice: +d.stopPrice
+        stopPrice: d.stopPrice
       };
     });
 
@@ -386,10 +400,17 @@ $(document).ready(function() {
       return d3.ascending(accessor.d(a), accessor.d(b));
     });
 
-    var dataStop = data.map(function(d) {
+    var dataStopTreding = data.map(function(d) {
       return {
         date: d.date,
-        close: +d.stopPrice
+        close: +d.stopPrice.treding
+      };
+    });
+
+    var dataStopLongTerm = data.map(function(d) {
+      return {
+        date: d.date,
+        close: +d.stopPrice.longTerm
       };
     });
 
@@ -436,11 +457,11 @@ $(document).ready(function() {
     //   }
     // ];
 
-    var supstanceData = [];
+    var sellData = [];
     var buyData = [];
     $.each(orders, function(k, v) {
       if (v.side == 'SELL' && v.symbolFrom + v.symbolTo == symbol) {
-        supstanceData.push({
+        sellData.push({
           start: parseDate(v.time),
           end: data[data.length - 1].date,
           value: v.price
@@ -472,9 +493,15 @@ $(document).ready(function() {
     svg.select("g.crosshair.macd").call(macdCrosshair).call(zoom);
     svg.select("g.crosshair.rsi").call(rsiCrosshair).call(zoom);
     // svg.select("g.trendlines").datum(trendlineData).call(trendline).call(trendline.drag);
-    svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
-    svg.select("g.supstancesBuy").datum(buyData).call(supstance).call(supstance.drag);
-    svg.select("g.stopPrice").datum(dataStop).call(stopPrice);
+    // svg.select("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag);
+    svg.select("g.stopPriceTreding").datum(dataStopTreding).call(stopPriceTreding);
+    svg.select("g.stopPriceLongTerm").datum(dataStopLongTerm).call(stopPriceLongTerm);
+
+    svg.select("g.supstancesSell").datum(sellData.slice(0, sellData.length - 1)).call(supstance);
+    svg.select("g.supstancesBuy").datum(buyData.slice(0, buyData.length - 1)).call(supstance);
+    svg.select("g.lastSupstancesSell").datum(sellData.length > 1 ? [sellData[sellData.length - 1]] : sellData).call(supstance);
+    svg.select("g.lastSupstancesBuy").datum(buyData.length > 1 ? [buyData[buyData.length - 1]] : buyData).call(supstance);
+
 
     // svg.select("g.tradearrow").datum(trades).call(tradearrow);
 
@@ -530,8 +557,13 @@ $(document).ready(function() {
     svg.select("g.crosshair.macd").call(macdCrosshair.refresh);
     svg.select("g.crosshair.rsi").call(rsiCrosshair.refresh);
     svg.select("g.trendlines").call(trendline.refresh);
-    svg.select("g.supstances").call(supstance.refresh);
+    // svg.select("g.supstances").call(supstance.refresh);
     svg.select("g.tradearrow").call(tradearrow.refresh);
-    svg.select("g.stopPrice").call(stopPrice.refresh);
+    svg.select("g.supstancesSell").call(supstance.refresh);
+    svg.select("g.supstancesBuy").call(supstance.refresh);
+    svg.select("g.lastSupstancesSell").call(supstance.refresh);
+    svg.select("g.lastSupstancesBuy").call(supstance.refresh);
+    svg.select("g.stopPriceTreding").call(stopPriceTreding.refresh);
+    svg.select("g.stopPriceLongTerm").call(stopPriceLongTerm.refresh);
   }
 });

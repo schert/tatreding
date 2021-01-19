@@ -13,7 +13,7 @@ module.exports = (io) => {
   /* GET home page. */
   router.get('/startStopLossMonitoring', (req, res, next) => {
 
-    var wind = 1;
+    var wind = 4;
     var timing = '1m';
 
     var startTime = new Date();
@@ -24,7 +24,7 @@ module.exports = (io) => {
     clearInterval(intervalMonitor);
     intervalMonitor = setInterval(function() {
       monitorStopPrice(startTime, endTime, timing);
-    }, 1000*60);
+    }, 1000 * 60);
 
     res.render('index', {
       page: 'Home',
@@ -51,30 +51,39 @@ module.exports = (io) => {
     binanceModule.getAllOpenOrder({}, (bRes) => {
 
       if (bRes.status != 200) {
-        sendStatus({code : -1, msg : 'Get all Order Error', obj : bRes.data});
+        sendStatus({
+          code: -1,
+          msg: 'Get all Order Error',
+          obj: bRes.data
+        });
         return;
       }
 
       if (bRes.data.length == 0) {
-        sendStatus({code : -1, msg : 'No orders', obj : bRes.data});
+        sendStatus({
+          code: -1,
+          msg: 'No orders',
+          obj: bRes.data
+        });
         return;
       }
 
       clearInterval(intervalMonitor);
       intervalMonitor = false;
-      sendStatus({code : 0, msg : 'Starting...'});
+      sendStatus({
+        code: 0,
+        msg: 'Starting...'
+      });
       var params = [];
       var historyStore = {};
       bRes.data.forEach((item, i) => {
-        binanceModule.getCandleHistory(item.symbol, timing, +startTime, +endTime, (history) => {
-          historyStore[item.symbol] = history;
-
-          historyStore[item.symbol].forEach((itemh, i) => {
-            itemh.stopPrice = analytics.stopPriceCalc(historyStore[item.symbol].slice(0, i + 1));
+        if (!historyStore[item.symbol]) {
+          binanceModule.getCandleHistory(item.symbol, timing, +startTime, +endTime, (history) => {
+            historyStore[item.symbol] = history;
+            analytics.stopPriceCalc(historyStore[item.symbol]);
           });
-        });
-
-        params.push(item.symbol.toLowerCase() + '@kline_' + timing);
+          params.push(item.symbol.toLowerCase() + '@kline_' + timing);
+        }
       });
 
       binanceModule.connect(client, () => {
@@ -87,7 +96,10 @@ module.exports = (io) => {
             if (!historyStore[raw.s])
               return;
 
-            sendStatus({code : 0, msg : 'Running...'});
+            sendStatus({
+              code: 0,
+              msg: 'Running...'
+            });
 
             var message = binanceModule.candleTransformer('stream', raw);
             var obj = historyStore[raw.s].pop();
@@ -97,9 +109,11 @@ module.exports = (io) => {
                 historyStore[raw.s].push(obj);
                 historyStore[raw.s].shift();
 
-                binanceModule.getAllOpenOrder({symbol : raw.s}, (bRes) => {
+                binanceModule.getAllOpenOrder({
+                  symbol: raw.s
+                }, (bRes) => {
                   var orders = [];
-                  if(bRes.data.length != 0) {
+                  if (bRes.data.length != 0) {
                     bRes.data.forEach((item, i) => {
                       if (!orders[item.symbol])
                         orders[item.symbol] = [];
@@ -109,13 +123,14 @@ module.exports = (io) => {
                     setNewStopPrice(raw.s, obj.stopPrice, obj, orders[raw.s]);
                   } else {
                     binanceModule.unsubscribe([raw.s.toLowerCase() + '@kline_' + timing]);
+                    sendStatus('Unsubscribe: '+[raw.s.toLowerCase() + '@kline_' + timing])
                   }
                 });
               }
             }
 
-            message.stopPrice = analytics.stopPriceCalc(historyStore[raw.s]);
             historyStore[raw.s].push(message);
+            analytics.stopPriceCalc(historyStore[raw.s]);
             break;
         }
       }, logger);
@@ -130,38 +145,93 @@ module.exports = (io) => {
 
     orders.forEach((item, i) => {
       if (item.type == 'STOP_LOSS_LIMIT') {
-        binanceModule.cancelOrder({
-          symbol: symbol,
-          orderId: item.orderId
-        }, (responseSL) => {
-          if (responseSL.status != 200) {
-            sendStatus({code : -1, msg : 'Order ID error', obj : responseSL.data});
-            return;
+
+        mysqlConnection.executeQueries({
+          sql: 'select * from monitoring where orderId = ?',
+          params: [item.orderId]
+        }).then((resMon) => {
+
+          if(resMon.lenght == 0) {
+            logger.error('Order ID not present', error);
           }
 
-          var spread = lastCandle.high - lastCandle.low;
+          var type = resMon[0].type;
 
-          binanceModule.setSellStopLimit({
-            timeInForce: 'GTC',
+          if(type == 'noMonitor')
+            return;
+
+          binanceModule.cancelOrder({
             symbol: symbol,
-            quantity: parseFloat(item.origQty),
-            price: parseFloat(stopPrice - (spread/2)),
-            stopPrice: parseFloat(stopPrice)
-          }, (response) => {
-            if (response.status != 200) {
-              sendStatus({code : -1, msg : 'Set Stop Limit error', obj : response.data});
-            } else {
-              var stopInv = {
-                symbol: symbol,
-                quantity: parseFloat(item.origQty),
-                price: parseFloat(stopPrice - (spread/2)),
-                stopPrice: parseFloat(stopPrice)
-              }
-              logger.info('inviato: ', stopInv);
-              sendStatus({code : 1, msg : 'Stop Limit setted', obj : stopInv});
+            orderId: item.orderId
+          }, (responseSL) => {
+            if (responseSL.status != 200) {
+              sendStatus({
+                code: -1,
+                msg: 'Order ID error',
+                obj: responseSL.data
+              });
+              return;
             }
+
+            mysqlConnection.executeQueries({
+              sql: 'DELETE from monitoring where orderId = ?',
+              params: [item.orderId]
+            }).catch((error) => {
+              logger.error('Query error delete order', error);
+            });
+
+            var spread = lastCandle.high - lastCandle.low;
+            var stopParams = {
+              timeInForce: 'GTC',
+              symbol: symbol,
+              quantity: parseFloat(item.origQty),
+              price: parseFloat(stopPrice[type] - (spread / 4)),
+              stopPrice: parseFloat(stopPrice[type])
+            };
+
+            binanceModule.setSellStopLimit(stopParams, (response) => {
+              if (response.status != 200) {
+                logger.error('Set Stop Limit error', response.data);
+
+                if (response.data.code == -2010) {
+
+                  binanceModule.setMarketOrder({
+                    timeInForce: 'GTC',
+                    symbol: symbol,
+                    quantity: stopParams.quantity
+                  }, (resLim) => {
+                    if (resLim.status != 200) {
+                      logger.error('Set Market order error', resLim.data);
+                      return;
+                    }
+
+                    sendStatus({
+                      code: 1,
+                      msg: 'Order Market setted',
+                      obj: stopParams
+                    });
+                  });
+                }
+              } else {
+                mysqlConnection.executeQueries({
+                  sql : 'INSERT INTO monitoring (symbol, type, orderId, initialValue) VALUES (?, ?, ?, ?) ',
+                  params : [symbol, type, response.data.orderId, -1]
+                }, true).then((resIn) => {
+                  logger.info('Stop Limit setted: ', stopParams);
+                  sendStatus({
+                    code: 1,
+                    msg: 'Stop Limit setted',
+                    obj: stopParams
+                  });
+                }).catch((error) => {
+                  logger.error('Query error insert stop limit', error);
+                });
+              }
+            });
           });
-        })
+        }).catch((error) => {
+          logger.error('Query error get monitoring type', error);
+        });
       }
     });
   }

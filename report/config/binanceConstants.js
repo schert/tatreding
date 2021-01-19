@@ -13,5 +13,6 @@ module.exports = Object.freeze({
   API_WALLET_INFO : constant.BASE_API_URL+'/api/'+constant.VERSION+'/account',
   API_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/order',
   API_ALL_OPEN_ORDER : constant.BASE_API_URL+'/api/'+constant.VERSION+'/openOrders',
-  API_TIME : constant.BASE_API_URL+'/api/'+constant.VERSION+'/time'
+  API_TIME : constant.BASE_API_URL+'/api/'+constant.VERSION+'/time',
+  API_AVG_PRICE : constant.BASE_API_URL+'/api/'+constant.VERSION+'/avgPrice'
 });

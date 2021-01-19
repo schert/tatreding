@@ -87,7 +87,7 @@ function registerClient(client) {
         return obj.id;
       }
 
-      return obj.id;
+      return null;
     }
 
     binanceModule.subscribe = function(param) {
@@ -168,9 +168,29 @@ binanceModule.cancelOrder = (params, callback) => {
   autenticatedCall(BN_CONF.API_ORDER, 'delete', params, callback);
 }
 
+binanceModule.avgPrice = (params, callback) => {
+  unatenticatedCall(BN_CONF.API_AVG_PRICE, 'get', params, callback);
+}
+
 binanceModule.setSellStopLimit = (params, callback) => {
   params.side = 'SELL';
   params.type = 'STOP_LOSS_LIMIT';
+
+  setOrder(params, callback);
+}
+
+binanceModule.setMarketOrder = (params, callback) => {
+  params.side = 'SELL';
+  params.type = 'MARKET';
+
+  setOrder(params, callback);
+}
+
+binanceModule.getAllOpenOrder = (params, callback) => {
+  autenticatedCall(BN_CONF.API_ALL_OPEN_ORDER, 'get', params, callback);
+}
+
+function setOrder(params, callback) {
 
   binanceModule.getExchangeInfo((response) => {
     for (const item of response.data.symbols) {
@@ -195,10 +215,6 @@ binanceModule.setSellStopLimit = (params, callback) => {
 
     logger.error('ExchangeInfo error');
   });
-}
-
-binanceModule.getAllOpenOrder = (params, callback) => {
-  autenticatedCall(BN_CONF.API_ALL_OPEN_ORDER, 'get', params, callback);
 }
 
 function unatenticatedCall(url, method, params, callback) {
@@ -296,6 +312,10 @@ function getMultipleCandle(symbol, interval, startTime, endTime, callback, limit
 
 function setServerWeigth(url, response) {
   var headerf = [];
+
+  if(!response || !response.status)
+    return;
+
   lastHTTPCode = response.status;
 
   if(!response.headers)
