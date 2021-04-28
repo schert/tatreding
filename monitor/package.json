@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
+    "start": "set PORT=4000 & node ./bin/www",
     "debug": "set PORT=4000 & nodemon ./bin/www",
     "debug-brk": "set PORT=4000 & nodemon --inspect-brk ./bin/www"
   },

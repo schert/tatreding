@@ -123,7 +123,8 @@ module.exports = (io) => {
                     setNewStopPrice(raw.s, obj.stopPrice, obj, orders[raw.s]);
                   } else {
                     binanceModule.unsubscribe([raw.s.toLowerCase() + '@kline_' + timing]);
-                    sendStatus('Unsubscribe: '+[raw.s.toLowerCase() + '@kline_' + timing])
+                    sendStatus('Unsubscribe: '+[raw.s.toLowerCase() + '@kline_' + timing]);
+                    log.info('Stop Monitoring');
                   }
                 });
               }
@@ -198,7 +199,7 @@ module.exports = (io) => {
                   binanceModule.setMarketOrder({
                     timeInForce: 'GTC',
                     symbol: symbol,
-                    quantity: stopParams.quantity
+                    quantity: parseFloat(item.origQty)
                   }, (resLim) => {
                     if (resLim.status != 200) {
                       logger.error('Set Market order error', resLim.data);

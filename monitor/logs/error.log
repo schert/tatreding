@@ -2369,3 +2369,37 @@
 {"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
 {"message":"404 - Not Found - / - GET - ::ffff:127.0.0.1","level":"error"}
 {"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"status":400,"data":{"code":-2010,"msg":"Stop price would trigger immediately."},"level":"error","message":"AutenticatedCall error: "}
+{"code":-2010,"msg":"Stop price would trigger immediately.","level":"error","message":"Set Stop Limit error"}
+{"status":400,"data":{"code":-1100,"msg":"Illegal characters found in parameter 'price'; legal range is '^([0-9]{1,20})(\\.[0-9]{1,20})?$'."},"level":"error","message":"AutenticatedCall error: "}
+{"code":-1100,"msg":"Illegal characters found in parameter 'price'; legal range is '^([0-9]{1,20})(\\.[0-9]{1,20})?$'.","level":"error","message":"Set Market order error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"level":"error","message":"Query error get monitoring type Cannot read property 'type' of undefined","stack":"TypeError: Cannot read property 'type' of undefined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:158:32\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"status":400,"data":{"code":-2010,"msg":"Stop price would trigger immediately."},"level":"error","message":"AutenticatedCall error: "}
+{"code":-2010,"msg":"Stop price would trigger immediately.","level":"error","message":"Set Stop Limit error"}
+{"status":400,"data":{"code":-1100,"msg":"Illegal characters found in parameter 'price'; legal range is '^([0-9]{1,20})(\\.[0-9]{1,20})?$'."},"level":"error","message":"AutenticatedCall error: "}
+{"code":-1100,"msg":"Illegal characters found in parameter 'price'; legal range is '^([0-9]{1,20})(\\.[0-9]{1,20})?$'.","level":"error","message":"Set Market order error"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - / - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /btc/eur/4/1m - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /btc/eur/4/1m - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /btc/eur/4/1m - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /btc/eur/4/1m - GET - ::ffff:127.0.0.1","level":"error"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at runMicrotasks (<anonymous>)\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"status":400,"data":{"code":-2011,"msg":"Unknown order sent."},"level":"error","message":"AutenticatedCall error: "}
+{"status":400,"data":{"code":-2011,"msg":"Unknown order sent."},"level":"error","message":"AutenticatedCall error: "}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}
+{"message":"404 - Not Found - /favicon.ico - GET - ::ffff:127.0.0.1","level":"error"}
+{"level":"error","message":"AutenticatedCall error:  log is not defined","stack":"ReferenceError: log is not defined\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\monitor\\routes\\index.js:127:21\n    at C:\\Users\\mortellarodo\\Desktop\\MyWk\\tatreding\\report\\modules\\binanceModule.js:259:11\n    at processTicksAndRejections (internal/process/task_queues.js:97:5)"}

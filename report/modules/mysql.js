@@ -9,17 +9,19 @@ var connection = mysql.createConnection({
   database: 'tatreding'
 });
 
-mysqlConnection.connect = function() {
+mysqlConnection.connect = function(callback) {
 
   if (connection.state === 'disconnected') {
     connection.connect(function(err) {
       if (err) {
         logger.error('error connecting: ' + err.stack);
-        return;
+        connection.end();
+        throw err;
       }
       logger.info('connected as id ' + connection.threadId);
     });
   }
+  callback();
 }
 
 mysqlConnection.executeQueries = function(queries, transact) {
@@ -76,18 +78,19 @@ mysqlConnection.executeQueries = function(queries, transact) {
     }
 
     try {
-      mysqlConnection.connect();
-      if (transact) {
-        connection.beginTransaction(function(err) {
-          if (err) {
-            rollbackAndFail(err);
-          } else {
-            promiseQueries(queries)
-          }
-        });
-      } else {
-        promiseQueries(queries)
-      }
+      mysqlConnection.connect(() => {
+        if (transact) {
+          connection.beginTransaction(function(err) {
+            if (err) {
+              rollbackAndFail(err);
+            } else {
+              promiseQueries(queries)
+            }
+          });
+        } else {
+          promiseQueries(queries)
+        }
+      });
     } catch (error) {
       rollbackAndFail(error)
     }
